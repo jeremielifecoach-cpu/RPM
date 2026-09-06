@@ -80,6 +80,8 @@ export const actions = pgTable("actions", {
   isDone: boolean("is_done").notNull().default(false),
   minutes: integer("minutes").notNull().default(15),
   position: integer("position").notNull().default(0),
+  dayOfWeek: text("day_of_week"),
+  actionDate: text("action_date"),
   createdAt: timestamp("created_at", { mode: "string" })
     .notNull()
     .defaultNow(),
