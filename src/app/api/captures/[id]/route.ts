@@ -10,20 +10,21 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  // Traitement du rattachement à un bloc existant
   if (body.targetBlockId && body.attachType) {
     const { targetBlockId, attachType, content, dayOfWeek, actionDate } = body;
     const textContent = content || body.content;
 
     if (attachType === "action") {
-      await db.insert(actions).values({
+      const actionPayload: any = {
         blockId: targetBlockId,
         content: textContent,
         isMust: body.isMust || false,
         isDone: false,
-        dayOfWeek: dayOfWeek || null,
-        actionDate: actionDate || null,
-      });
+      };
+      if (dayOfWeek) actionPayload.dayOfWeek = dayOfWeek;
+      if (actionDate) actionPayload.actionDate = actionDate;
+
+      await db.insert(actions).values(actionPayload);
     } else if (attachType === "result") {
       await db
         .update(rpmBlocks)
@@ -45,7 +46,6 @@ export async function PATCH(
     return NextResponse.json({ ok: true, capture: row });
   }
 
-  // Mise à jour classique
   const patch: Partial<typeof captures.$inferInsert> = {};
   if (typeof body.content === "string" && body.content.trim())
     patch.content = body.content.trim();
