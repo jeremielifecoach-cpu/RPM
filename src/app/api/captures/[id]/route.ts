@@ -13,6 +13,7 @@ export async function PATCH(
   if (body.targetBlockId && body.attachType) {
     const { targetBlockId, attachType, content, dayOfWeek, actionDate } = body;
     const textContent = content || body.content;
+    const nowIso = new Date().toISOString();
 
     if (attachType === "action") {
       const actionPayload: any = {
@@ -28,12 +29,12 @@ export async function PATCH(
     } else if (attachType === "result") {
       await db
         .update(rpmBlocks)
-        .set({ result: textContent, updatedAt: new Date() })
+        .set({ result: textContent, updatedAt: nowIso })
         .where(eq(rpmBlocks.id, targetBlockId));
     } else if (attachType === "purpose") {
       await db
         .update(rpmBlocks)
-        .set({ purpose: textContent, updatedAt: new Date() })
+        .set({ purpose: textContent, updatedAt: nowIso })
         .where(eq(rpmBlocks.id, targetBlockId));
     }
 
