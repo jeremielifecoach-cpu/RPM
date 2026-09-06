@@ -16,6 +16,7 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
   const [areaId, setAreaId] = useState("");
 
   // Formulaire rattachement
+  const [attachContent, setAttachContent] = useState("");
   const [targetBlockId, setTargetBlockId] = useState("");
   const [attachType, setAttachType] = useState<"action" | "result" | "purpose">("action");
   const [dayOfWeek, setDayOfWeek] = useState("");
@@ -38,6 +39,7 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
   const openChunkModal = async (capture: any) => {
     setSelectedCapture(capture);
     setTitle(capture.content);
+    setAttachContent(capture.content);
     // Charger les blocs RPM existants pour le menu déroulant
     const res = await fetch("/api/blocks");
     if (res.ok) {
@@ -70,14 +72,14 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
         body: JSON.stringify({ status: "processed" }),
       });
     } else {
-      // 2. Rattacher à un bloc existant
+      // 2. Rattacher à un bloc existant (Action, Résultat ou Pourquoi)
       await fetch(`/api/captures/${selectedCapture.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           targetBlockId,
           attachType,
-          content: selectedCapture.content,
+          content: attachContent,
           dayOfWeek: dayOfWeek || null,
         }),
       });
@@ -174,6 +176,15 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
               </div>
             ) : (
               <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold block">Contenu à injecter</label>
+                  <input
+                    type="text"
+                    value={attachContent}
+                    onChange={(e) => setAttachContent(e.target.value)}
+                    className="w-full border p-2 rounded"
+                  />
+                </div>
                 <div>
                   <label className="text-xs font-bold block">Sélectionner le Bloc RPM cible</label>
                   <select
