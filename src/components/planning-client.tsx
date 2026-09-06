@@ -2,18 +2,34 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Area, Role, RpmBlock, ActionItem } from "@/db/schema";
+
+interface ExtendedBlock extends RpmBlock {
+  area?: Area | null;
+  role?: Role | null;
+  actions?: ActionItem[];
+}
+
+interface PlanningClientProps {
+  blocks: ExtendedBlock[];
+  areas: Area[];
+  roles: Role[];
+  weekKey: string;
+  prevWeekKey: string;
+  nextWeekKey: string;
+}
 
 export function PlanningClient({
-  blocks,
+  blocks: initialBlocks,
   areas,
   roles,
   weekKey,
   prevWeekKey,
   nextWeekKey,
-}: any) {
+}: PlanningClientProps) {
   const [allBlocks, setAllBlocks] = useState<any[]>([]);
 
-  // Charger la totalité des blocs RPM (toutes semaines confondues)
+  // Charger tous les blocs pour le récapitulatif global en bas
   useEffect(() => {
     async function loadAllBlocks() {
       const res = await fetch("/api/blocks?all=true");
@@ -27,7 +43,7 @@ export function PlanningClient({
 
   return (
     <div className="space-y-10">
-      {/* 1. HAUT DE PAGE : Vue hebdomadaire d'origine */}
+      {/* 1. HAUT DE PAGE : Design d'origine inchangé */}
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -37,131 +53,183 @@ export function PlanningClient({
             <h1 className="text-3xl font-extrabold tracking-tight text-amber-50">
               Planification <span className="italic text-amber-400">RPM</span>
             </h1>
-            <p className="mt-1 text-xs text-amber-200/60">
+            <p className="mt-1 text-xs text-amber-200/60 max-w-2xl">
               <strong className="text-amber-300">R</strong> comme{" "}
               <strong className="text-amber-100">Résultat</strong> — une destination précise.{" "}
               <strong className="text-amber-300">P</strong> comme{" "}
               <strong className="text-amber-100">Pourquoi</strong> — ton moteur émotionnel.{" "}
               <strong className="text-amber-300">M</strong> comme{" "}
-              <strong className="text-amber-100">Massif</strong> — ton plan d'action.
+              <strong className="text-amber-100">Massif</strong> — ton plan d'action. Ne gère pas ton temps : gère ta vie.
             </p>
           </div>
 
           <Link
             href="/capture"
-            className="rounded-xl border border-amber-500/40 bg-amber-500/20 px-5 py-2.5 text-sm font-bold text-amber-300 shadow-lg hover:bg-amber-500/30 transition-all"
+            className="rounded-xl border border-amber-500/40 bg-amber-500/20 px-5 py-2.5 text-sm font-bold text-amber-300 shadow-lg hover:bg-amber-500/30 transition-all flex items-center gap-2"
           >
-            + Nouveau bloc RPM
+            <span>+</span> Nouveau bloc RPM
           </Link>
         </div>
 
-        {/* Navigation Semaine */}
+        {/* Baromètre / Navigation des semaines */}
         <div className="flex items-center justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-4 shadow-xl">
           <Link
             href={`/planifier?semaine=${prevWeekKey}`}
-            className="rounded-xl border border-amber-500/20 bg-black/40 px-4 py-2 text-xs font-semibold text-amber-200/80 hover:bg-amber-500/10 transition-all"
+            className="rounded-xl border border-amber-500/20 bg-black/40 px-4 py-2 text-xs font-semibold text-amber-200/80 hover:bg-amber-500/10 hover:border-amber-500/40 transition-all"
           >
             ‹ Semaine précédente
           </Link>
-          <span className="text-sm font-bold text-amber-100 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-            Semaine du {weekKey}
-          </span>
+
+          <div className="flex items-center gap-2 text-sm font-bold text-amber-100">
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Semaine du {weekKey}</span>
+          </div>
+
           <Link
             href={`/planifier?semaine=${nextWeekKey}`}
-            className="rounded-xl border border-amber-500/20 bg-black/40 px-4 py-2 text-xs font-semibold text-amber-200/80 hover:bg-amber-500/10 transition-all"
+            className="rounded-xl border border-amber-500/20 bg-black/40 px-4 py-2 text-xs font-semibold text-amber-200/80 hover:bg-amber-500/10 hover:border-amber-500/40 transition-all"
           >
             Semaine suivante ›
           </Link>
         </div>
 
-        {/* Blocs de la semaine sélectionnée */}
+        {/* Cartes détaillées de la semaine d'origine */}
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-amber-100">
-            Blocs de la semaine ({blocks?.length || 0})
+          <h2 className="text-lg font-bold text-amber-100 flex items-center justify-between">
+            <span>Blocs actifs cette semaine</span>
+            <span className="text-xs font-normal text-amber-200/50">
+              {initialBlocks.length} bloc(s)
+            </span>
           </h2>
-          {(!blocks || blocks.length === 0) ? (
-            <div className="rounded-2xl border border-dashed border-amber-500/20 p-8 text-center text-sm text-amber-200/40 bg-[#121110]">
-              Aucun bloc RPM planifié pour cette semaine.
+
+          {initialBlocks.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-amber-500/20 p-12 text-center bg-[#121110] space-y-3">
+              <p className="text-sm text-amber-200/60">
+                Aucun bloc RPM planifié pour cette semaine.
+              </p>
+              <Link
+                href="/capture"
+                className="inline-block rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition-all"
+              >
+                Créer ou chunker une idée
+              </Link>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {blocks.map((block: any) => (
-                <div
-                  key={block.id}
-                  className="rounded-2xl border border-amber-500/20 bg-[#121110] p-5 shadow-xl space-y-3 hover:border-amber-500/40 transition-all"
-                >
-                  <div className="flex items-center justify-between text-xs text-amber-200/50">
-                    <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                      {block.status || "Actif"}
-                    </span>
+            <div className="grid gap-6 md:grid-cols-2">
+              {initialBlocks.map((block) => {
+                const totalActions = block.actions?.length || 0;
+                const doneActions = block.actions?.filter((a) => a.isDone).length || 0;
+                const progress = totalActions > 0 ? Math.round((doneActions / totalActions) * 100) : 0;
+                const mustCount = block.actions?.filter((a) => a.isMust).length || 0;
+
+                return (
+                  <div
+                    key={block.id}
+                    className="flex flex-col justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-6 shadow-xl space-y-4 hover:border-amber-500/40 transition-all"
+                  >
+                    <div className="space-y-3">
+                      {/* Badges Domaine & Rôle */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider">
+                        <div className="flex gap-2">
+                          {block.area && (
+                            <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-400">
+                              {block.area.name}
+                            </span>
+                          )}
+                          {block.role && (
+                            <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-300">
+                              {block.role.name}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-amber-400 font-extrabold">{progress}%</span>
+                      </div>
+
+                      {/* Résultat (Outcome) */}
+                      <div>
+                        <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest block">
+                          R · Résultat
+                        </span>
+                        <h3 className="text-base font-bold text-amber-100 mt-0.5">
+                          {block.result}
+                        </h3>
+                      </div>
+
+                      {/* Pourquoi (Purpose) */}
+                      {block.purpose && (
+                        <div>
+                          <span className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest block">
+                            P · Pourquoi
+                          </span>
+                          <p className="text-xs text-amber-200/60 italic line-clamp-2 mt-0.5">
+                            "{block.purpose}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats Actions & Lien */}
+                    <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between text-xs">
+                      <div className="text-amber-200/60 space-x-3">
+                        <span>{doneActions}/{totalActions} actions</span>
+                        {mustCount > 0 && (
+                          <span className="text-amber-400 font-semibold">★ {mustCount} MUST</span>
+                        )}
+                      </div>
+
+                      <Link
+                        href={`/planifier/${block.id}`}
+                        className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-semibold text-amber-300 hover:bg-amber-500/20 transition-all"
+                      >
+                        Ouvrir le plan →
+                      </Link>
+                    </div>
                   </div>
-                  <h3 className="text-base font-bold text-amber-100">
-                    {block.result || block.title || "Bloc sans titre"}
-                  </h3>
-                  {block.purpose && (
-                    <p className="text-xs text-amber-200/60 italic">
-                      "{block.purpose}"
-                    </p>
-                  )}
-                  <div className="pt-2">
-                    <Link
-                      href={`/planifier/${block.id}`}
-                      className="inline-flex items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition-all"
-                    >
-                      Ouvrir le plan →
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* 2. BAS DE PAGE : Vue globale de tous les blocs */}
+      {/* 2. BAS DE PAGE : Section globale séparée (Tous les blocs) */}
       <div className="rounded-2xl border border-amber-500/20 bg-[#121110] p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between border-b border-amber-500/10 pb-3">
           <h2 className="text-lg font-bold text-amber-100 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-            Tous mes blocs RPM ({allBlocks.length})
+            Tous mes blocs RPM (Historique global)
           </h2>
-          <span className="text-xs text-amber-200/50">Toutes semaines confondues</span>
+          <span className="text-xs text-amber-200/50">{allBlocks.length} bloc(s) au total</span>
         </div>
 
         {allBlocks.length === 0 ? (
           <div className="rounded-xl border border-dashed border-amber-500/10 p-8 text-center text-xs text-amber-200/40">
-            Aucun bloc RPM créé.
+            Aucun bloc trouvé dans la base.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allBlocks.map((block) => (
               <div
                 key={block.id}
-                className="flex flex-col justify-between rounded-xl border border-amber-500/20 bg-black/40 p-4 space-y-3 hover:border-amber-500/40 transition-all"
+                className="flex flex-col justify-between rounded-xl border border-amber-500/10 bg-black/40 p-4 space-y-3 hover:border-amber-500/30 transition-all"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-amber-200/50">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-amber-200/50">
                     <span>Semaine du {block.weekStart}</span>
-                    <span className="uppercase text-[10px] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                    <span className="uppercase text-[9px] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold">
                       {block.status || "Actif"}
                     </span>
                   </div>
                   <h3 className="font-semibold text-amber-100 text-sm line-clamp-2">
                     {block.result || block.title || "Bloc sans titre"}
                   </h3>
-                  {block.purpose && (
-                    <p className="text-xs text-amber-200/60 line-clamp-2 italic">
-                      "{block.purpose}"
-                    </p>
-                  )}
                 </div>
 
                 <Link
                   href={`/planifier/${block.id}`}
-                  className="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
+                  className="inline-flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
                 >
-                  Ouvrir le plan →
+                  Voir le bloc →
                 </Link>
               </div>
             ))}
