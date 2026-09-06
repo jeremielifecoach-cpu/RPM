@@ -1,21 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { Area, Role, Capture } from "@/db/schema";
 
-export function CaptureClient({ areas, roles, captures, weekKey }: any) {
-  const [captureList, setCaptureList] = useState(captures);
+interface CaptureClientProps {
+  areas: Area[];
+  roles: Role[];
+  captures: Capture[];
+  weekKey: string;
+}
+
+export function CaptureClient({ areas, roles, captures, weekKey }: CaptureClientProps) {
+  const [captureList, setCaptureList] = useState<Capture[]>(captures);
   const [newContent, setNewContent] = useState("");
-  const [selectedCapture, setSelectedCapture] = useState<any>(null);
+  const [selectedCapture, setSelectedCapture] = useState<Capture | null>(null);
   const [mode, setMode] = useState<"new_block" | "attach">("new_block");
   const [existingBlocks, setExistingBlocks] = useState<any[]>([]);
 
-  // Formulaire nouveau bloc
+  // Formulaire Nouveau Bloc RPM
   const [title, setTitle] = useState("");
   const [result, setResult] = useState("");
   const [purpose, setPurpose] = useState("");
   const [areaId, setAreaId] = useState("");
 
-  // Formulaire rattachement
+  // Formulaire Rattachement
   const [attachContent, setAttachContent] = useState("");
   const [targetBlockId, setTargetBlockId] = useState("");
   const [attachType, setAttachType] = useState<"action" | "result" | "purpose">("action");
@@ -36,11 +44,11 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
     }
   };
 
-  const openChunkModal = async (capture: any) => {
+  const openChunkModal = async (capture: Capture) => {
     setSelectedCapture(capture);
     setTitle(capture.content);
     setAttachContent(capture.content);
-    // Charger les blocs RPM existants pour le menu déroulant
+    
     const res = await fetch("/api/blocks");
     if (res.ok) {
       const data = await res.json();
@@ -53,26 +61,23 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
     if (!selectedCapture) return;
 
     if (mode === "new_block") {
-      // 1. Créer un nouveau bloc RPM
       await fetch("/api/blocks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          result,
+          result: result || title,
           purpose,
           areaId: areaId || null,
           weekStart: weekKey,
         }),
       });
-      // Marquer la capture comme traitée
       await fetch(`/api/captures/${selectedCapture.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "processed" }),
       });
     } else {
-      // 2. Rattacher à un bloc existant (Action, Résultat ou Pourquoi)
       await fetch(`/api/captures/${selectedCapture.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -85,114 +90,167 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
       });
     }
 
-    setCaptureList(captureList.filter((c: any) => c.id !== selectedCapture.id));
+    setCaptureList(captureList.filter((c) => c.id !== selectedCapture.id));
     setSelectedCapture(null);
   };
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Boîte de Réception / Captures</h1>
+    <div className="max-w-4xl mx-auto space-y-8 p-4">
+      {/* En-tête */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Capture & Chunking</h1>
+        <p className="text-muted-foreground mt-1">
+          Videz votre esprit (Brain Dump), puis transformez vos idées en blocs RPM ou en actions.
+        </p>
+      </div>
 
-      <form onSubmit={handleCreateCapture} className="flex gap-2">
+      {/* Barre de saisie */}
+      <form onSubmit={handleCreateCapture} className="flex gap-3">
         <input
           type="text"
-          placeholder="Capturer une idée, un projet ou une action..."
+          placeholder="Une idée, un projet, une tâche en tête..."
           value={newContent}
           onChange={(e) => setNewContent(e.target.value)}
-          className="flex-1 border p-2 rounded text-black"
+          className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+          type="submit"
+          className="rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+        >
           Capturer
         </button>
       </form>
 
+      {/* Liste des Captures en attente */}
       <div className="space-y-3">
-        {captureList
-          .filter((c: any) => c.status !== "processed")
-          .map((c: any) => (
-            <div key={c.id} className="border p-3 rounded flex justify-between items-center bg-white shadow-sm">
-              <span className="text-black">{c.content}</span>
-              <button
-                onClick={() => openChunkModal(c)}
-                className="bg-emerald-600 text-white px-3 py-1 rounded text-sm"
+        <h2 className="text-xl font-semibold">Boîte de réception ({captureList.filter(c => c.status !== "processed").length})</h2>
+        {captureList.filter((c) => c.status !== "processed").length === 0 ? (
+          <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
+            Aucune capture en attente. Votre esprit est libre !
+          </div>
+        ) : (
+          captureList
+            .filter((c) => c.status !== "processed")
+            .map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-all hover:shadow-md"
               >
-                Traiter (Chunk)
-              </button>
-            </div>
-          ))}
+                <span className="font-medium">{c.content}</span>
+                <button
+                  onClick={() => openChunkModal(c)}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
+                >
+                  Chunker / Traiter
+                </button>
+              </div>
+            ))
+        )}
       </div>
 
+      {/* Modale de Chunking */}
       {selectedCapture && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white text-black p-6 rounded-lg max-w-lg w-full space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold">Traiter la capture</h2>
-            <p className="bg-gray-100 p-2 rounded text-sm font-medium">{selectedCapture.content}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border bg-card p-6 text-card-foreground shadow-2xl space-y-6">
+            <div>
+              <h3 className="text-xl font-bold">Traitement de la capture</h3>
+              <p className="mt-2 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                "{selectedCapture.content}"
+              </p>
+            </div>
 
-            <div className="flex gap-4 border-b pb-2">
+            {/* Onglets Choix du Mode */}
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1 text-sm font-medium">
               <button
                 type="button"
-                className={`font-semibold pb-1 ${mode === "new_block" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-500"}`}
                 onClick={() => setMode("new_block")}
+                className={`rounded-lg py-2 transition-all ${
+                  mode === "new_block"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                Créer un Nouveau Bloc RPM
+                Nouveau Bloc RPM
               </button>
               <button
                 type="button"
-                className={`font-semibold pb-1 ${mode === "attach" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-500"}`}
                 onClick={() => setMode("attach")}
+                className={`rounded-lg py-2 transition-all ${
+                  mode === "attach"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                Rattacher à un Bloc Existant
+                Ajouter à un Bloc Existant
               </button>
             </div>
 
             {mode === "new_block" ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold block">Titre du bloc</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Titre du bloc</label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full border p-2 rounded"
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold block">Résultat souhaité (Outcome)</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Résultat souhaité (Outcome)</label>
                   <input
                     type="text"
+                    placeholder="Qu'est-ce que vous voulez concrètement ?"
                     value={result}
                     onChange={(e) => setResult(e.target.value)}
-                    className="w-full border p-2 rounded"
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold block">Pourquoi / Révolution (Purpose)</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Pourquoi (Purpose / Raisons)</label>
                   <textarea
+                    placeholder="Pourquoi est-ce crucial d'atteindre ce résultat ?"
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    className="w-full border p-2 rounded"
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    rows={3}
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Domaine de vie (Area)</label>
+                  <select
+                    value={areaId}
+                    onChange={(e) => setAreaId(e.target.value)}
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Sélectionner un domaine</option>
+                    {areas.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold block">Contenu à injecter</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Contenu</label>
                   <input
                     type="text"
                     value={attachContent}
                     onChange={(e) => setAttachContent(e.target.value)}
-                    className="w-full border p-2 rounded"
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold block">Sélectionner le Bloc RPM cible</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Bloc RPM Cible</label>
                   <select
                     value={targetBlockId}
                     onChange={(e) => setTargetBlockId(e.target.value)}
-                    className="w-full border p-2 rounded"
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   >
-                    {existingBlocks.map((b: any) => (
+                    {existingBlocks.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.title || b.result || "Bloc sans titre"}
                       </option>
@@ -200,11 +258,11 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold block">Rattacher en tant que :</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Injecter en tant que</label>
                   <select
                     value={attachType}
                     onChange={(e: any) => setAttachType(e.target.value)}
-                    className="w-full border p-2 rounded"
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   >
                     <option value="action">Action (MAP)</option>
                     <option value="result">Résultat (Outcome)</option>
@@ -213,13 +271,13 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
                 </div>
                 {attachType === "action" && (
                   <div>
-                    <label className="text-xs font-bold block">Jour d'assignation (Optionnel)</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Jour de la semaine</label>
                     <select
                       value={dayOfWeek}
                       onChange={(e) => setDayOfWeek(e.target.value)}
-                      className="w-full border p-2 rounded"
+                      className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                     >
-                      <option value="">Non assigné (Toute la semaine)</option>
+                      <option value="">Toute la semaine (Aujourd'hui / Global)</option>
                       <option value="Monday">Lundi</option>
                       <option value="Tuesday">Mardi</option>
                       <option value="Wednesday">Mercredi</option>
@@ -233,20 +291,20 @@ export function CaptureClient({ areas, roles, captures, weekKey }: any) {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-3 pt-4 border-t">
               <button
                 type="button"
                 onClick={() => setSelectedCapture(null)}
-                className="px-4 py-2 border rounded"
+                className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={handleProcessCapture}
-                className="px-4 py-2 bg-blue-600 text-white rounded font-medium"
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors"
               >
-                Enregistrer
+                Valider & Enregistrer
               </button>
             </div>
           </div>
