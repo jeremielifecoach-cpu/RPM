@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Area, Role, RpmBlock, ActionItem } from "@/db/schema";
 
 interface ExtendedBlock extends RpmBlock {
@@ -28,8 +29,9 @@ export function PlanningClient({
   nextWeekKey,
 }: PlanningClientProps) {
   const [allBlocks, setAllBlocks] = useState<any[]>([]);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Charger tous les blocs pour le récapitulatif global en bas
   useEffect(() => {
     async function loadAllBlocks() {
       const res = await fetch("/api/blocks?all=true");
@@ -41,9 +43,22 @@ export function PlanningClient({
     loadAllBlocks();
   }, []);
 
+  const handleDuplicateBlock = async (blockId: string) => {
+    setDuplicatingId(blockId);
+    const res = await fetch(`/api/blocks/${blockId}/duplicate`, {
+      method: "POST",
+    });
+    if (res.ok) {
+      const newBlock = await res.json();
+      router.push(`/planifier?semaine=${newBlock.weekStart}`);
+      router.refresh();
+    }
+    setDuplicatingId(null);
+  };
+
   return (
     <div className="space-y-10">
-      {/* 1. HAUT DE PAGE : Design d'origine inchangé */}
+      {/* HAUT DE PAGE */}
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -55,11 +70,11 @@ export function PlanningClient({
             </h1>
             <p className="mt-1 text-xs text-amber-200/60 max-w-2xl">
               <strong className="text-amber-300">R</strong> comme{" "}
-              <strong className="text-amber-100">Résultat</strong> — une destination précise.{" "}
+              <strong className="text-amber-100">Résultat</strong> —{" "}
               <strong className="text-amber-300">P</strong> comme{" "}
-              <strong className="text-amber-100">Pourquoi</strong> — ton moteur émotionnel.{" "}
+              <strong className="text-amber-100">Pourquoi</strong> —{" "}
               <strong className="text-amber-300">M</strong> comme{" "}
-              <strong className="text-amber-100">Massif</strong> — ton plan d'action. Ne gère pas ton temps : gère ta vie.
+              <strong className="text-amber-100">Massif</strong>.
             </p>
           </div>
 
@@ -71,7 +86,7 @@ export function PlanningClient({
           </Link>
         </div>
 
-        {/* Baromètre / Navigation des semaines */}
+        {/* Navigation Semaine */}
         <div className="flex items-center justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-4 shadow-xl">
           <Link
             href={`/planifier?semaine=${prevWeekKey}`}
@@ -93,7 +108,7 @@ export function PlanningClient({
           </Link>
         </div>
 
-        {/* Cartes détaillées de la semaine d'origine */}
+        {/* Liste des blocs de la semaine */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-amber-100 flex items-center justify-between">
             <span>Blocs actifs cette semaine</span>
@@ -128,7 +143,6 @@ export function PlanningClient({
                     className="flex flex-col justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-6 shadow-xl space-y-4 hover:border-amber-500/40 transition-all"
                   >
                     <div className="space-y-3">
-                      {/* Badges Domaine & Rôle */}
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider">
                         <div className="flex gap-2">
                           {block.area && (
@@ -145,7 +159,6 @@ export function PlanningClient({
                         <span className="text-amber-400 font-extrabold">{progress}%</span>
                       </div>
 
-                      {/* Résultat (Outcome) */}
                       <div>
                         <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest block">
                           R · Résultat
@@ -155,7 +168,6 @@ export function PlanningClient({
                         </h3>
                       </div>
 
-                      {/* Pourquoi (Purpose) */}
                       {block.purpose && (
                         <div>
                           <span className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest block">
@@ -168,21 +180,30 @@ export function PlanningClient({
                       )}
                     </div>
 
-                    {/* Stats Actions & Lien */}
-                    <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between text-xs">
-                      <div className="text-amber-200/60 space-x-3">
+                    <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between text-xs gap-2">
+                      <div className="text-amber-200/60 space-x-2">
                         <span>{doneActions}/{totalActions} actions</span>
                         {mustCount > 0 && (
                           <span className="text-amber-400 font-semibold">★ {mustCount} MUST</span>
                         )}
                       </div>
 
-                      <Link
-                        href={`/planifier/${block.id}`}
-                        className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-semibold text-amber-300 hover:bg-amber-500/20 transition-all"
-                      >
-                        Ouvrir le plan →
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDuplicateBlock(block.id)}
+                          disabled={duplicatingId === block.id}
+                          className="rounded-xl border border-amber-500/20 bg-black/40 px-3 py-2 text-xs font-semibold text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
+                          title="Dupliquer pour la semaine prochaine"
+                        >
+                          {duplicatingId === block.id ? "Duplication..." : "Dupliquer ↷"}
+                        </button>
+                        <Link
+                          href={`/planifier/${block.id}`}
+                          className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition-all"
+                        >
+                          Ouvrir →
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );
@@ -192,7 +213,7 @@ export function PlanningClient({
         </div>
       </div>
 
-      {/* 2. BAS DE PAGE : Section globale séparée (Tous les blocs) */}
+      {/* HISTORIQUE GLOBAL EN BAS */}
       <div className="rounded-2xl border border-amber-500/20 bg-[#121110] p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between border-b border-amber-500/10 pb-3">
           <h2 className="text-lg font-bold text-amber-100 flex items-center gap-2">
@@ -225,12 +246,20 @@ export function PlanningClient({
                   </h3>
                 </div>
 
-                <Link
-                  href={`/planifier/${block.id}`}
-                  className="inline-flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
-                >
-                  Voir le bloc →
-                </Link>
+                <div className="flex items-center justify-between gap-2 pt-2">
+                  <button
+                    onClick={() => handleDuplicateBlock(block.id)}
+                    className="text-xs text-amber-200/60 hover:text-amber-300 transition-all"
+                  >
+                    Dupliquer ↷
+                  </button>
+                  <Link
+                    href={`/planifier/${block.id}`}
+                    className="inline-flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
+                  >
+                    Voir le bloc →
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
