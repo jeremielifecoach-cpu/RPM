@@ -42,8 +42,14 @@ export function PlanningClient({
   nextWeekKey,
 }: PlanningClientProps) {
   const [allBlocks, setAllBlocks] = useState<any[]>([]);
+  const [blocksList, setBlocksList] = useState<ExtendedBlock[]>(initialBlocks);
+  const [selectedAreaId, setSelectedAreaId] = useState<string>("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setBlocksList(initialBlocks);
+  }, [initialBlocks]);
 
   useEffect(() => {
     async function loadAllBlocks() {
@@ -56,7 +62,7 @@ export function PlanningClient({
     loadAllBlocks();
   }, []);
 
-  const handleAction = async (blockId: string, isReport: boolean) => {
+  const handleDuplicateOrReport = async (blockId: string, isReport: boolean) => {
     setLoadingId(blockId);
     const res = await fetch(`/api/blocks/${blockId}/duplicate`, {
       method: "POST",
@@ -70,6 +76,27 @@ export function PlanningClient({
     }
     setLoadingId(null);
   };
+
+  const handleToggleVictory = async (blockId: string, currentStatus: string | null) => {
+    const newStatus = currentStatus === "victory" ? "active" : "victory";
+    const res = await fetch(`/api/blocks/${blockId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    if (res.ok) {
+      setBlocksList(
+        blocksList.map((b) => (b.id === blockId ? { ...b, status: newStatus } : b))
+      );
+      router.refresh();
+    }
+  };
+
+  const filteredBlocks = blocksList.filter((b) => {
+    if (selectedAreaId === "all") return true;
+    return b.areaId === selectedAreaId;
+  });
 
   return (
     <div className="space-y-10">
@@ -123,19 +150,50 @@ export function PlanningClient({
           </Link>
         </div>
 
+        {/* Filtres par Domaine de vie */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-amber-500/10 pb-4">
+          <span className="text-xs font-semibold text-amber-200/50 mr-2">Filtrer :</span>
+          <button
+            onClick={() => setSelectedAreaId("all")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+              selectedAreaId === "all"
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                : "bg-black/30 text-amber-200/60 border border-amber-500/10 hover:text-amber-200"
+            }`}
+          >
+            Tous les domaines ({blocksList.length})
+          </button>
+          {areas.map((area) => {
+            const count = blocksList.filter((b) => b.areaId === area.id).length;
+            return (
+              <button
+                key={area.id}
+                onClick={() => setSelectedAreaId(area.id)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                  selectedAreaId === area.id
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                    : "bg-black/30 text-amber-200/60 border border-amber-500/10 hover:text-amber-200"
+                }`}
+              >
+                {area.name} ({count})
+              </button>
+            );
+          })}
+        </div>
+
         {/* Liste des blocs de la semaine */}
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-amber-100 flex items-center justify-between">
-            <span>Blocs actifs cette semaine</span>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-amber-100">Blocs actifs cette semaine</h2>
             <span className="text-xs font-normal text-amber-200/50">
-              {initialBlocks.length} bloc(s)
+              {filteredBlocks.length} bloc(s) affiché(s)
             </span>
-          </h2>
+          </div>
 
-          {initialBlocks.length === 0 ? (
+          {filteredBlocks.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-amber-500/20 p-12 text-center bg-[#121110] space-y-3">
               <p className="text-sm text-amber-200/60">
-                Aucun bloc RPM planifié pour cette semaine.
+                Aucun bloc RPM pour ce filtre cette semaine.
               </p>
               <Link
                 href="/capture"
@@ -146,45 +204,55 @@ export function PlanningClient({
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {initialBlocks.map((block) => {
+              {filteredBlocks.map((block) => {
                 const totalActions = block.actions?.length || 0;
                 const doneActions = block.actions?.filter((a) => a.isDone).length || 0;
                 const progress = totalActions > 0 ? Math.round((doneActions / totalActions) * 100) : 0;
                 const mustCount = block.actions?.filter((a) => a.isMust).length || 0;
                 const isContinuation = block.result.startsWith("[Suite]");
+                const isVictory = block.status === "victory";
 
                 return (
                   <div
                     key={block.id}
-                    className="flex flex-col justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-6 shadow-xl space-y-4 hover:border-amber-500/40 transition-all"
+                    className={`flex flex-col justify-between rounded-2xl border p-6 shadow-xl space-y-4 transition-all ${
+                      isVictory
+                        ? "border-emerald-500/40 bg-emerald-950/20"
+                        : "border-amber-500/20 bg-[#121110] hover:border-amber-500/40"
+                    }`}
                   >
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider">
                         <div className="flex gap-2 items-center">
-                          {isContinuation && (
-                            <span className="rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-amber-300 flex items-center gap-1">
-                              🔄 Suite
+                          {isVictory ? (
+                            <span className="rounded bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-emerald-300 font-extrabold flex items-center gap-1">
+                              🏆 VICTOIRE ATTEINTE
                             </span>
-                          )}
-                          {block.area && (
-                            <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-400">
-                              {block.area.name}
-                            </span>
-                          )}
-                          {block.role && (
-                            <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-300">
-                              {block.role.name}
-                            </span>
+                          ) : (
+                            <>
+                              {isContinuation && (
+                                <span className="rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-amber-300">
+                                  🔄 Suite
+                                </span>
+                              )}
+                              {block.area && (
+                                <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-400">
+                                  {block.area.name}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
-                        <span className="text-amber-400 font-extrabold">{progress}%</span>
+                        <span className={isVictory ? "text-emerald-400 font-extrabold" : "text-amber-400 font-extrabold"}>
+                          {progress}%
+                        </span>
                       </div>
 
                       <div>
                         <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest block">
                           R · Résultat
                         </span>
-                        <h3 className="text-base font-bold text-amber-100 mt-0.5">
+                        <h3 className={`text-base font-bold mt-0.5 ${isVictory ? "text-emerald-100 line-through decoration-emerald-500/50" : "text-amber-100"}`}>
                           {block.result.replace("[Suite] ", "")}
                         </h3>
                       </div>
@@ -211,18 +279,27 @@ export function PlanningClient({
 
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => handleAction(block.id, false)}
+                          onClick={() => handleToggleVictory(block.id, block.status)}
+                          className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-all ${
+                            isVictory
+                              ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                              : "border-amber-500/20 bg-black/40 text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300"
+                          }`}
+                          title="Célébrer la réalisation de cet objectif"
+                        >
+                          {isVictory ? "🏆 Gagné" : "🏆 Victoire"}
+                        </button>
+                        <button
+                          onClick={() => handleDuplicateOrReport(block.id, false)}
                           disabled={loadingId === block.id}
                           className="rounded-lg border border-amber-500/20 bg-black/40 px-2.5 py-1.5 text-[11px] font-semibold text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
-                          title="Dupliquer tout le bloc et ses actions pour la semaine prochaine"
                         >
                           Dupliquer ⎘
                         </button>
                         <button
-                          onClick={() => handleAction(block.id, true)}
+                          onClick={() => handleDuplicateOrReport(block.id, true)}
                           disabled={loadingId === block.id}
                           className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/20 transition-all"
-                          title="Reporter uniquement les actions non terminées"
                         >
                           Reporter 🔄
                         </button>
@@ -278,16 +355,14 @@ export function PlanningClient({
                 <div className="flex items-center justify-between gap-2 pt-2">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleAction(block.id, false)}
+                      onClick={() => handleDuplicateOrReport(block.id, false)}
                       className="text-xs text-amber-200/60 hover:text-amber-300 transition-all"
-                      title="Dupliquer tout"
                     >
                       Dupliquer ⎘
                     </button>
                     <button
-                      onClick={() => handleAction(block.id, true)}
+                      onClick={() => handleDuplicateOrReport(block.id, true)}
                       className="text-xs text-amber-300 hover:text-amber-200 transition-all"
-                      title="Reporter la suite"
                     >
                       Reporter 🔄
                     </button>
