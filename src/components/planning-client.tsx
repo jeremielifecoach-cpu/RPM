@@ -20,7 +20,6 @@ interface PlanningClientProps {
   nextWeekKey: string;
 }
 
-// Fonction utilitaire pour afficher les dates au format Français
 function formatDateFr(dateStr: string) {
   if (!dateStr) return "";
   const [year, month, day] = dateStr.split("-");
@@ -43,7 +42,7 @@ export function PlanningClient({
   nextWeekKey,
 }: PlanningClientProps) {
   const [allBlocks, setAllBlocks] = useState<any[]>([]);
-  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,17 +56,19 @@ export function PlanningClient({
     loadAllBlocks();
   }, []);
 
-  const handleDuplicateBlock = async (blockId: string) => {
-    setDuplicatingId(blockId);
+  const handleAction = async (blockId: string, isReport: boolean) => {
+    setLoadingId(blockId);
     const res = await fetch(`/api/blocks/${blockId}/duplicate`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isReport }),
     });
     if (res.ok) {
       const newBlock = await res.json();
       router.push(`/planifier?semaine=${newBlock.weekStart}`);
       router.refresh();
     }
-    setDuplicatingId(null);
+    setLoadingId(null);
   };
 
   return (
@@ -100,7 +101,7 @@ export function PlanningClient({
           </Link>
         </div>
 
-        {/* Navigation Semaine avec format Français */}
+        {/* Navigation Semaine */}
         <div className="flex items-center justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-4 shadow-xl">
           <Link
             href={`/planifier?semaine=${prevWeekKey}`}
@@ -162,7 +163,7 @@ export function PlanningClient({
                         <div className="flex gap-2 items-center">
                           {isContinuation && (
                             <span className="rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-amber-300 flex items-center gap-1">
-                              🔄 Suite / Report
+                              🔄 Suite
                             </span>
                           )}
                           {block.area && (
@@ -200,7 +201,7 @@ export function PlanningClient({
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between text-xs gap-2">
+                    <div className="pt-3 border-t border-amber-500/10 flex flex-wrap items-center justify-between text-xs gap-2">
                       <div className="text-amber-200/60 space-x-2">
                         <span>{doneActions}/{totalActions} actions</span>
                         {mustCount > 0 && (
@@ -208,18 +209,26 @@ export function PlanningClient({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => handleDuplicateBlock(block.id)}
-                          disabled={duplicatingId === block.id}
-                          className="rounded-xl border border-amber-500/20 bg-black/40 px-3 py-2 text-xs font-semibold text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
-                          title="Dupliquer / Reporter la semaine prochaine"
+                          onClick={() => handleAction(block.id, false)}
+                          disabled={loadingId === block.id}
+                          className="rounded-lg border border-amber-500/20 bg-black/40 px-2.5 py-1.5 text-[11px] font-semibold text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
+                          title="Dupliquer tout le bloc et ses actions pour la semaine prochaine"
                         >
-                          {duplicatingId === block.id ? "Report..." : "Dupliquer ↷"}
+                          Dupliquer ⎘
+                        </button>
+                        <button
+                          onClick={() => handleAction(block.id, true)}
+                          disabled={loadingId === block.id}
+                          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/20 transition-all"
+                          title="Reporter uniquement les actions non terminées"
+                        >
+                          Reporter 🔄
                         </button>
                         <Link
                           href={`/planifier/${block.id}`}
-                          className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition-all"
+                          className="rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/30 transition-all"
                         >
                           Ouvrir →
                         </Link>
@@ -267,17 +276,27 @@ export function PlanningClient({
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-2">
-                  <button
-                    onClick={() => handleDuplicateBlock(block.id)}
-                    className="text-xs text-amber-200/60 hover:text-amber-300 transition-all"
-                  >
-                    Dupliquer ↷
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAction(block.id, false)}
+                      className="text-xs text-amber-200/60 hover:text-amber-300 transition-all"
+                      title="Dupliquer tout"
+                    >
+                      Dupliquer ⎘
+                    </button>
+                    <button
+                      onClick={() => handleAction(block.id, true)}
+                      className="text-xs text-amber-300 hover:text-amber-200 transition-all"
+                      title="Reporter la suite"
+                    >
+                      Reporter 🔄
+                    </button>
+                  </div>
                   <Link
                     href={`/planifier/${block.id}`}
                     className="inline-flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
                   >
-                    Voir le bloc →
+                    Voir →
                   </Link>
                 </div>
               </div>
