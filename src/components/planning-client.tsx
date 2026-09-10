@@ -213,9 +213,9 @@ export function PlanningClient({
                           onClick={() => handleDuplicateBlock(block.id)}
                           disabled={duplicatingId === block.id}
                           className="rounded-xl border border-amber-500/20 bg-black/40 px-3 py-2 text-xs font-semibold text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
-                          title="Reporter / Poursuivre la semaine prochaine"
+                          title="Dupliquer / Reporter la semaine prochaine"
                         >
-                          {duplicatingId === block.id ? "Report..." : "Reporter ↷"}
+                          {duplicatingId === block.id ? "Report..." : "Dupliquer ↷"}
                         </button>
                         <Link
                           href={`/planifier/${block.id}`}
@@ -271,7 +271,7 @@ export function PlanningClient({
                     onClick={() => handleDuplicateBlock(block.id)}
                     className="text-xs text-amber-200/60 hover:text-amber-300 transition-all"
                   >
-                    Reporter ↷
+                    Dupliquer ↷
                   </button>
                   <Link
                     href={`/planifier/${block.id}`}
