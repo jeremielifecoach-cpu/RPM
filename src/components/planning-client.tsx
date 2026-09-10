@@ -45,6 +45,7 @@ export function PlanningClient({
   const [blocksList, setBlocksList] = useState<ExtendedBlock[]>(initialBlocks);
   const [selectedAreaId, setSelectedAreaId] = useState<string>("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [newActionInputs, setNewActionInputs] = useState<{ [blockId: string]: string }>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -90,6 +91,49 @@ export function PlanningClient({
         blocksList.map((b) => (b.id === blockId ? { ...b, status: newStatus } : b))
       );
       router.refresh();
+    }
+  };
+
+  const handleToggleActionDone = async (blockId: string, actionId: string, currentDone: boolean) => {
+    const res = await fetch(`/api/actions/${actionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isDone: !currentDone }),
+    });
+
+    if (res.ok) {
+      setBlocksList(
+        blocksList.map((b) => {
+          if (b.id !== blockId) return b;
+          const updatedActions = b.actions?.map((a) =>
+            a.id === actionId ? { ...a, isDone: !currentDone } : a
+          );
+          return { ...b, actions: updatedActions };
+        })
+      );
+    }
+  };
+
+  const handleAddExpressAction = async (blockId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const content = newActionInputs[blockId]?.trim();
+    if (!content) return;
+
+    const res = await fetch("/api/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blockId, content }),
+    });
+
+    if (res.ok) {
+      const createdAction = await res.json();
+      setBlocksList(
+        blocksList.map((b) => {
+          if (b.id !== blockId) return b;
+          return { ...b, actions: [...(b.actions || []), createdAction] };
+        })
+      );
+      setNewActionInputs({ ...newActionInputs, [blockId]: "" });
     }
   };
 
@@ -181,7 +225,7 @@ export function PlanningClient({
           })}
         </div>
 
-        {/* Liste des blocs de la semaine */}
+        {/* Liste des blocs */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-amber-100">Blocs actifs cette semaine</h2>
@@ -267,11 +311,76 @@ export function PlanningClient({
                           </p>
                         </div>
                       )}
+
+                      {/* Checklist rapide des actions */}
+                      <div className="space-y-1.5 pt-2 border-t border-amber-500/10">
+                        <span className="text-[10px] font-bold text-amber-200/50 uppercase tracking-wider block">
+                          Actions ({doneActions}/{totalActions})
+                        </span>
+                        {block.actions && block.actions.length > 0 ? (
+                          <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                            {block.actions.map((act) => (
+                              <div
+                                key={act.id}
+                                onClick={() => handleToggleActionDone(block.id, act.id, act.isDone)}
+                                className="flex items-center gap-2 text-xs p-1.5 rounded bg-black/40 border border-amber-500/10 hover:border-amber-500/30 cursor-pointer transition-all"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={act.isDone}
+                                  onChange={() => {}}
+                                  className="rounded border-amber-500/30 bg-black text-amber-500 focus:ring-0"
+                                />
+                                <span
+                                  className={`flex-1 ${
+                                    act.isDone
+                                      ? "line-through text-amber-200/40"
+                                      : "text-amber-100 font-medium"
+                                  }`}
+                                >
+                                  {act.content}
+                                </span>
+                                {act.isMust && (
+                                  <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1 rounded">
+                                    MUST
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-200/40 italic">Aucune action ajoutée.</p>
+                        )}
+
+                        {/* Ajout express d'action */}
+                        <form
+                          onSubmit={(e) => handleAddExpressAction(block.id, e)}
+                          className="flex gap-2 pt-1"
+                        >
+                          <input
+                            type="text"
+                            placeholder="+ Ajouter une action..."
+                            value={newActionInputs[block.id] || ""}
+                            onChange={(e) =>
+                              setNewActionInputs({
+                                ...newActionInputs,
+                                [block.id]: e.target.value,
+                              })
+                            }
+                            className="flex-1 rounded-lg border border-amber-500/20 bg-black/50 px-2.5 py-1 text-xs text-amber-100 placeholder:text-amber-200/30 focus:outline-none focus:border-amber-500/50"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-lg bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/30 transition-all"
+                          >
+                            Ajouter
+                          </button>
+                        </form>
+                      </div>
                     </div>
 
                     <div className="pt-3 border-t border-amber-500/10 flex flex-wrap items-center justify-between text-xs gap-2">
                       <div className="text-amber-200/60 space-x-2">
-                        <span>{doneActions}/{totalActions} actions</span>
                         {mustCount > 0 && (
                           <span className="text-amber-400 font-semibold">★ {mustCount} MUST</span>
                         )}
@@ -285,7 +394,6 @@ export function PlanningClient({
                               ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
                               : "border-amber-500/20 bg-black/40 text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300"
                           }`}
-                          title="Célébrer la réalisation de cet objectif"
                         >
                           {isVictory ? "🏆 Gagné" : "🏆 Victoire"}
                         </button>
