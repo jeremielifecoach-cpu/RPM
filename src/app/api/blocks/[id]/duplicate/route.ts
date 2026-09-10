@@ -15,6 +15,7 @@ export async function POST(
 ) {
   const { id } = await params;
 
+  // 1. Récupérer le bloc existant
   const [sourceBlock] = await db
     .select()
     .from(rpmBlocks)
@@ -24,12 +25,18 @@ export async function POST(
     return NextResponse.json({ error: "Bloc introuvable" }, { status: 404 });
   }
 
+  // 2. Calculer la date de la semaine suivante
   const nextWeek = addWeeks(sourceBlock.weekStart, 1);
+
+  // 3. Créer le nouveau bloc marqué comme suite/continuité
+  const newResult = sourceBlock.result.includes("[Suite]")
+    ? sourceBlock.result
+    : `[Suite] ${sourceBlock.result}`;
 
   const [newBlock] = await db
     .insert(rpmBlocks)
     .values({
-      result: sourceBlock.result,
+      result: newResult,
       purpose: sourceBlock.purpose,
       areaId: sourceBlock.areaId,
       roleId: sourceBlock.roleId,
@@ -38,6 +45,7 @@ export async function POST(
     })
     .returning();
 
+  // 4. Copier les actions (en priorité celles non terminées)
   const sourceActions = await db
     .select()
     .from(actions)
@@ -49,9 +57,10 @@ export async function POST(
         blockId: newBlock.id,
         content: a.content,
         isMust: a.isMust,
-        isDone: false,
+        isDone: false, // Réinitialisé pour la nouvelle semaine
         minutes: a.minutes,
         position: a.position,
+        dayOfWeek: a.dayOfWeek || null,
       }))
     );
   }
