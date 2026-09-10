@@ -20,6 +20,20 @@ interface PlanningClientProps {
   nextWeekKey: string;
 }
 
+// Fonction utilitaire pour afficher les dates au format Français
+function formatDateFr(dateStr: string) {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-");
+  if (!year || !month || !day) return dateStr;
+  
+  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function PlanningClient({
   blocks: initialBlocks,
   areas,
@@ -58,7 +72,7 @@ export function PlanningClient({
 
   return (
     <div className="space-y-10">
-      {/* HAUT DE PAGE */}
+      {/* En-tête */}
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -86,7 +100,7 @@ export function PlanningClient({
           </Link>
         </div>
 
-        {/* Navigation Semaine */}
+        {/* Navigation Semaine avec format Français */}
         <div className="flex items-center justify-between rounded-2xl border border-amber-500/20 bg-[#121110] p-4 shadow-xl">
           <Link
             href={`/planifier?semaine=${prevWeekKey}`}
@@ -97,7 +111,7 @@ export function PlanningClient({
 
           <div className="flex items-center gap-2 text-sm font-bold text-amber-100">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span>Semaine du {weekKey}</span>
+            <span>Semaine du {formatDateFr(weekKey)}</span>
           </div>
 
           <Link
@@ -136,6 +150,7 @@ export function PlanningClient({
                 const doneActions = block.actions?.filter((a) => a.isDone).length || 0;
                 const progress = totalActions > 0 ? Math.round((doneActions / totalActions) * 100) : 0;
                 const mustCount = block.actions?.filter((a) => a.isMust).length || 0;
+                const isContinuation = block.result.startsWith("[Suite]");
 
                 return (
                   <div
@@ -144,7 +159,12 @@ export function PlanningClient({
                   >
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
+                          {isContinuation && (
+                            <span className="rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-amber-300 flex items-center gap-1">
+                              🔄 Suite / Report
+                            </span>
+                          )}
                           {block.area && (
                             <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-400">
                               {block.area.name}
@@ -164,7 +184,7 @@ export function PlanningClient({
                           R · Résultat
                         </span>
                         <h3 className="text-base font-bold text-amber-100 mt-0.5">
-                          {block.result}
+                          {block.result.replace("[Suite] ", "")}
                         </h3>
                       </div>
 
@@ -193,9 +213,9 @@ export function PlanningClient({
                           onClick={() => handleDuplicateBlock(block.id)}
                           disabled={duplicatingId === block.id}
                           className="rounded-xl border border-amber-500/20 bg-black/40 px-3 py-2 text-xs font-semibold text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
-                          title="Dupliquer pour la semaine prochaine"
+                          title="Reporter / Poursuivre la semaine prochaine"
                         >
-                          {duplicatingId === block.id ? "Duplication..." : "Dupliquer ↷"}
+                          {duplicatingId === block.id ? "Report..." : "Reporter ↷"}
                         </button>
                         <Link
                           href={`/planifier/${block.id}`}
@@ -213,7 +233,7 @@ export function PlanningClient({
         </div>
       </div>
 
-      {/* HISTORIQUE GLOBAL EN BAS */}
+      {/* Historique Global */}
       <div className="rounded-2xl border border-amber-500/20 bg-[#121110] p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between border-b border-amber-500/10 pb-3">
           <h2 className="text-lg font-bold text-amber-100 flex items-center gap-2">
@@ -236,13 +256,13 @@ export function PlanningClient({
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] text-amber-200/50">
-                    <span>Semaine du {block.weekStart}</span>
+                    <span>Semaine du {formatDateFr(block.weekStart)}</span>
                     <span className="uppercase text-[9px] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold">
                       {block.status || "Actif"}
                     </span>
                   </div>
                   <h3 className="font-semibold text-amber-100 text-sm line-clamp-2">
-                    {block.result || block.title || "Bloc sans titre"}
+                    {block.result?.replace("[Suite] ", "") || block.title || "Bloc sans titre"}
                   </h3>
                 </div>
 
@@ -251,7 +271,7 @@ export function PlanningClient({
                     onClick={() => handleDuplicateBlock(block.id)}
                     className="text-xs text-amber-200/60 hover:text-amber-300 transition-all"
                   >
-                    Dupliquer ↷
+                    Reporter ↷
                   </button>
                   <Link
                     href={`/planifier/${block.id}`}
