@@ -14,6 +14,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  const isReport = body.isReport ?? false; // true = report, false = duplication simple
 
   // 1. Récupérer le bloc existant
   const [sourceBlock] = await db
@@ -28,10 +30,11 @@ export async function POST(
   // 2. Calculer la date de la semaine suivante
   const nextWeek = addWeeks(sourceBlock.weekStart, 1);
 
-  // 3. Créer le nouveau bloc marqué comme suite/continuité
-  const newResult = sourceBlock.result.includes("[Suite]")
-    ? sourceBlock.result
-    : `[Suite] ${sourceBlock.result}`;
+  // 3. Déterminer le titre/résultat
+  let newResult = sourceBlock.result;
+  if (isReport && !newResult.startsWith("[Suite]")) {
+    newResult = `[Suite] ${newResult}`;
+  }
 
   const [newBlock] = await db
     .insert(rpmBlocks)
@@ -45,24 +48,31 @@ export async function POST(
     })
     .returning();
 
-  // 4. Copier les actions (en priorité celles non terminées)
+  // 4. Copier les actions selon le mode
   const sourceActions = await db
     .select()
     .from(actions)
     .where(eq(actions.blockId, id));
 
   if (sourceActions.length > 0) {
-    await db.insert(actions).values(
-      sourceActions.map((a) => ({
-        blockId: newBlock.id,
-        content: a.content,
-        isMust: a.isMust,
-        isDone: false, // Réinitialisé pour la nouvelle semaine
-        minutes: a.minutes,
-        position: a.position,
-        dayOfWeek: a.dayOfWeek || null,
-      }))
-    );
+    // Si c'est un report, on ne prend que les actions non terminées
+    const actionsToCopy = isReport
+      ? sourceActions.filter((a) => !a.isDone)
+      : sourceActions;
+
+    if (actionsToCopy.length > 0) {
+      await db.insert(actions).values(
+        actionsToCopy.map((a) => ({
+          blockId: newBlock.id,
+          content: a.content,
+          isMust: a.isMust,
+          isDone: false, // Réinitialisé pour la nouvelle semaine
+          minutes: a.minutes,
+          position: a.position,
+          dayOfWeek: a.dayOfWeek || null,
+        }))
+      );
+    }
   }
 
   return NextResponse.json(newBlock, { status: 201 });
