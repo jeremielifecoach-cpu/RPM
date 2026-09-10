@@ -4,22 +4,25 @@ import { actions } from "@/db/schema";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const blockId = String(body?.blockId ?? "");
-  const content = String(body?.content ?? "").trim();
-  if (!blockId || !content)
+  const { blockId, content, isMust, dayOfWeek } = body;
+
+  if (!blockId || !content) {
     return NextResponse.json(
-      { error: "Bloc et contenu requis" },
+      { error: "blockId et content sont requis" },
       { status: 400 }
     );
-  const [row] = await db
+  }
+
+  const [newAction] = await db
     .insert(actions)
     .values({
       blockId,
       content,
-      isMust: Boolean(body?.isMust),
-      minutes: Number(body?.minutes) || 15,
-      position: Date.now() % 1000000,
+      isMust: isMust || false,
+      isDone: false,
+      dayOfWeek: dayOfWeek || null,
     })
     .returning();
-  return NextResponse.json(row, { status: 201 });
+
+  return NextResponse.json(newAction, { status: 201 });
 }
