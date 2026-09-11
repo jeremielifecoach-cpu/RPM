@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 
-// 1. Domaines de vie
+// 1. Domaines de vie (Areas)
 export const areas = pgTable("areas", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -73,7 +73,7 @@ export const journalEntries = pgTable("journal_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// --- NOUVEAU : Niveau Macro CEO (Les 7 Magnifiques) ---
+// 8. Niveau Macro CEO (Les 7 Magnifiques)
 export const lifeVisionDomains = pgTable("life_vision_domains", {
   id: text("id").primaryKey(),
   areaId: text("area_id").references(() => areas.id),
@@ -87,7 +87,7 @@ export const lifeVisionDomains = pgTable("life_vision_domains", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// --- NOUVEAU : Moteur d'exécution Trimestriel (Q1..Q4) ---
+// 9. Moteur d'exécution Trimestriel (Q1..Q4)
 export const quarterlyMilestones = pgTable("quarterly_milestones", {
   id: text("id").primaryKey(),
   domainId: text("domain_id").references(() => lifeVisionDomains.id, { onDelete: "cascade" }),
