@@ -13,67 +13,77 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const body = await req.json().catch(() => ({}));
-  const isReport = body.isReport ?? false; // true = report, false = duplication simple
+  try {
+    const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const isReport = body.isReport ?? false;
 
-  // 1. Récupérer le bloc existant
-  const [sourceBlock] = await db
-    .select()
-    .from(rpmBlocks)
-    .where(eq(rpmBlocks.id, id));
+    // 1. Récupérer le bloc existant
+    const [sourceBlock] = await db
+      .select()
+      .from(rpmBlocks)
+      .where(eq(rpmBlocks.id, id));
 
-  if (!sourceBlock) {
-    return NextResponse.json({ error: "Bloc introuvable" }, { status: 404 });
-  }
-
-  // 2. Calculer la date de la semaine suivante
-  const nextWeek = addWeeks(sourceBlock.weekStart, 1);
-
-  // 3. Déterminer le titre/résultat
-  let newResult = sourceBlock.result;
-  if (isReport && !newResult.startsWith("[Suite]")) {
-    newResult = `[Suite] ${newResult}`;
-  }
-
-  const [newBlock] = await db
-    .insert(rpmBlocks)
-    .values({
-      result: newResult,
-      purpose: sourceBlock.purpose,
-      areaId: sourceBlock.areaId,
-      roleId: sourceBlock.roleId,
-      status: "active",
-      weekStart: nextWeek,
-    })
-    .returning();
-
-  // 4. Copier les actions selon le mode
-  const sourceActions = await db
-    .select()
-    .from(actions)
-    .where(eq(actions.blockId, id));
-
-  if (sourceActions.length > 0) {
-    // Si c'est un report, on ne prend que les actions non terminées
-    const actionsToCopy = isReport
-      ? sourceActions.filter((a) => !a.isDone)
-      : sourceActions;
-
-    if (actionsToCopy.length > 0) {
-      await db.insert(actions).values(
-        actionsToCopy.map((a) => ({
-          blockId: newBlock.id,
-          content: a.content,
-          isMust: a.isMust,
-          isDone: false, // Réinitialisé pour la nouvelle semaine
-          minutes: a.minutes,
-          position: a.position,
-          dayOfWeek: a.dayOfWeek || null,
-        }))
-      );
+    if (!sourceBlock) {
+      return NextResponse.json({ error: "Bloc introuvable" }, { status: 404 });
     }
-  }
 
-  return NextResponse.json(newBlock, { status: 201 });
+    // 2. Calculer la date de la semaine suivante
+    const nextWeek = addWeeks(sourceBlock.weekStart, 1);
+
+    // 3. Déterminer le titre/résultat
+    let newResult = sourceBlock.result;
+    if (isReport && !newResult.startsWith("[Suite]")) {
+      newResult = `[Suite] ${newResult}`;
+    }
+
+    const newBlockId = `block_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const [newBlock] = await db
+      .insert(rpmBlocks)
+      .values({
+        id: newBlockId,
+        result: newResult,
+        purpose: sourceBlock.purpose,
+        areaId: sourceBlock.areaId,
+        roleId: sourceBlock.roleId,
+        status: "active",
+        weekStart: nextWeek,
+      })
+      .returning();
+
+    // 4. Copier les actions selon le mode
+    const sourceActions = await db
+      .select()
+      .from(actions)
+      .where(eq(actions.blockId, id));
+
+    if (sourceActions.length > 0) {
+      const actionsToCopy = isReport
+        ? sourceActions.filter((a) => !a.isDone)
+        : sourceActions;
+
+      if (actionsToCopy.length > 0) {
+        await db.insert(actions).values(
+          actionsToCopy.map((a, index) => ({
+            id: `action_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 7)}`,
+            blockId: newBlock.id,
+            content: a.content,
+            isMust: a.isMust,
+            isDone: false,
+            minutes: a.minutes,
+            position: a.position,
+            dayOfWeek: a.dayOfWeek || null,
+          }))
+        );
+      }
+    }
+
+    return NextResponse.json(newBlock, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erreur lors de la duplication" },
+      { status: 500 }
+    );
+  }
 }
