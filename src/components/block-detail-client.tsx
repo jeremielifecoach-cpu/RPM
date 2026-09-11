@@ -139,7 +139,7 @@ export function BlockDetailClient({
   const musts = block.actions.filter((a) => a.isMust);
   const optionals = block.actions.filter((a) => !a.isMust);
   const isVictory = block.status === "victoire";
-  const totalMinutes = block.actions.reduce((s, a) => s + a.minutes, 0);
+  const totalMinutes = block.actions.reduce((s, a) => s + (a.minutes || 0), 0);
 
   return (
     <div className="space-y-7">
@@ -338,7 +338,7 @@ export function BlockDetailClient({
         <ul className="mt-3 space-y-2">
           {musts.length === 0 && (
             <li className="rounded-xl border border-dashed border-white/10 px-4 py-4 text-sm text-zinc-500">
-              Aucun MUST identifié. Parmis tes actions, lesquelles sont
+              Aucun MUST identifié. Parmi tes actions, lesquelles sont
               absolument indispensables au résultat ?
             </li>
           )}
@@ -396,7 +396,7 @@ export function BlockDetailClient({
                   ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
                   : "border-white/10 text-zinc-500 hover:text-zinc-300"
               )}
-              title="MUST si indispensale au résultat"
+              title="MUST si indispensable au résultat"
             >
               <Star
                 className={cn("h-3.5 w-3.5", newMust && "fill-amber-300")}
@@ -448,6 +448,8 @@ function ActionRow({
   onMinutes: (id: string, v: number) => void;
   onRemove: (id: string) => void;
 }) {
+  const minutes = action.minutes || 0;
+
   return (
     <li
       className={cn(
@@ -482,11 +484,11 @@ function ActionRow({
         {action.content}
       </p>
       <button
-        onClick={() => onMinutes(action.id, action.minutes + 5 > 90 ? 10 : action.minutes + 5)}
+        onClick={() => onMinutes(action.id, minutes + 5 > 90 ? 10 : minutes + 5)}
         title="Durée estimée (cliquer pour augmenter)"
         className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-zinc-400 transition-colors hover:text-zinc-200"
       >
-        {action.minutes}&apos;
+        {minutes}&apos;
       </button>
       <button
         onClick={() => onStar(action.id, !action.isMust)}
