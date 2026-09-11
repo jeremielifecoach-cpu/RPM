@@ -71,37 +71,4 @@ export default async function HomePage() {
       }}
     />
   );
-}    .filter((a) => a.isMust && !a.isDone)
-    .reduce((s, a) => s + (a.minutes || 0), 0);
-
-  const doneCount = allActions.filter((a) => a.isDone).length;
-  const weekProgress =
-    allActions.length === 0
-      ? 0
-      : Math.round((doneCount / allActions.length) * 100);
-
-  const inboxCount = captureList.length;
-
-  const now = new Date();
-  const todayLabel = now.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
-  return (
-    <DashboardClient
-      weekKey="current"
-      weekLabel="Semaine en cours"
-      todayLabel={todayLabel}
-      areas={areaList}
-      blocks={blocks}
-      stats={{
-        totalMustMin,
-        doneCount,
-        weekProgress,
-        inboxCount,
-      }}
-    />
-  );
 }
