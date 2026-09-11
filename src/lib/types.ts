@@ -1,25 +1,17 @@
-import type { ActionItem, Area, Capture, JournalEntry, Role, RpmBlock } from "@/db/schema";
+import type { Area, Role, RpmBlock, ActionItem, Capture } from "@/db/schema";
 
-export type BlockFull = RpmBlock & {
+export interface BlockFull extends RpmBlock {
   actions: ActionItem[];
   area: Area | null;
   role: Role | null;
   doneCount: number;
   totalCount: number;
-  mustLeft: number;
   progress: number;
-};
+  mustLeft: number;
+}
 
-export type CaptureWithArea = Capture & { area: Area | null };
-
-export type DashboardStats = {
-  activeBlocks: number;
-  totalBlocks: number;
+export interface DashboardStats {
+  totalMustMin: number;
+  doneCount: number;
   weekProgress: number;
-  mustTotal: number;
-  mustDone: number;
-  inboxCount: number;
-  momentsTotal: number;
-};
-
-export type { ActionItem, Area, Capture, JournalEntry, Role, RpmBlock };
+}
