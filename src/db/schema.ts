@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { InferSelectModel } from "drizzle-orm";
 
 // 1. Domaines de vie (Areas)
 export const areas = pgTable("areas", {
@@ -96,3 +97,13 @@ export const quarterlyMilestones = pgTable("quarterly_milestones", {
   targetOutcome: text("target_outcome").notNull().default(""),
   isCurrent: boolean("is_current").notNull().default(false),
 });
+
+// --- EXPORT DES TYPES TYPESCRIPT ---
+export type Area = InferSelectModel<typeof areas>;
+export type Role = InferSelectModel<typeof roles>;
+export type RpmBlock = InferSelectModel<typeof rpmBlocks>;
+export type ActionItem = InferSelectModel<typeof actions>;
+export type Capture = InferSelectModel<typeof captures>;
+export type JournalEntry = InferSelectModel<typeof journalEntries>;
+export type LifeVisionDomain = InferSelectModel<typeof lifeVisionDomains>;
+export type QuarterlyMilestone = InferSelectModel<typeof quarterlyMilestones>;
