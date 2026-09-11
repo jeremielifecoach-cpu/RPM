@@ -34,7 +34,7 @@ export default async function HomePage() {
     };
   });
 
-  const mustMin = allActions
+  const totalMustMin = allActions
     .filter((a) => a.isMust && !a.isDone)
     .reduce((s, a) => s + (a.minutes || 0), 0);
 
@@ -51,7 +51,7 @@ export default async function HomePage() {
       areas={areaList}
       captures={captureList}
       stats={{
-        mustMin,
+        totalMustMin,
         doneCount,
         weekProgress,
       }}
