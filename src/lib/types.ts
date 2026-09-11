@@ -14,4 +14,5 @@ export interface DashboardStats {
   totalMustMin: number;
   doneCount: number;
   weekProgress: number;
+  inboxCount: number;
 }
