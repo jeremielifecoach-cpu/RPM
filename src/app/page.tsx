@@ -47,6 +47,9 @@ export default async function HomePage() {
   const activeBlocks = blocks.filter((b) => b.status === "active").length;
   const totalBlocks = blocks.length;
 
+  const mustDone = allActions.filter((a) => a.isMust && a.isDone).length;
+  const mustTotal = allActions.filter((a) => a.isMust).length;
+
   const now = new Date();
   const todayLabel = now.toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -68,6 +71,8 @@ export default async function HomePage() {
         inboxCount,
         activeBlocks,
         totalBlocks,
+        mustDone,
+        mustTotal,
       }}
     />
   );
