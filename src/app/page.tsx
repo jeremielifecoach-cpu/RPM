@@ -1,29 +1,20 @@
-import {
-  ensureAreasSeeded,
-  ensureRolesValuesSeeded,
-  getAreas,
-  getInboxCount,
-  getWeekBlocks,
-} from "@/lib/data";
-import { longDateFr, weekKeyOf, weekRangeLabel } from "@/lib/date";
+import { db } from "@/db";
+import { rpmBlocks, actions, areas, captures } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { DashboardClient } from "@/components/dashboard-client";
 
-export const dynamic = "force-dynamic";
+export default async function HomePage() {
+  const [blocks, allActions, areaList, captureList] = await Promise.all([
+    db.select().from(rpmBlocks).where(eq(rpmBlocks.status, "active")),
+    db.select().from(actions),
+    db.select().from(areas),
+    db.select().from(captures).where(eq(captures.status, "inbox")),
+  ]);
 
-export default async function Home() {
-  await ensureAreasSeeded();
-  await ensureRolesValuesSeeded();
-  const [areaList, inboxCount] = await Promise.all([getAreas(), getInboxCount()]);
-  const weekKey = weekKeyOf(new Date());
-  const blocks = await getWeekBlocks(weekKey);
-
-  const activeBlocks = blocks.filter((b) => b.status === "active");
-  const allActions = activeBlocks.flatMap((b) => b.actions);
-  const musts = allActions.filter((a) => a.isMust);
-  const mustDone = musts.filter((a) => a.isDone).length;
   const totalMin = allActions
     .filter((a) => !a.isDone)
-    .reduce((s, a) => s + a.minutes, 0);
+    .reduce((s, a) => s + (a.minutes || 0), 0);
+
   const doneCount = allActions.filter((a) => a.isDone).length;
   const weekProgress =
     allActions.length === 0
@@ -32,19 +23,14 @@ export default async function Home() {
 
   return (
     <DashboardClient
-      weekKey={weekKey}
-      weekLabel={weekRangeLabel(weekKey)}
-      todayLabel={longDateFr(new Date())}
-      areas={areaList}
       blocks={blocks}
+      actions={allActions}
+      areas={areaList}
+      captures={captureList}
       stats={{
-        activeBlocks: activeBlocks.length,
-        totalBlocks: blocks.length,
+        totalMin,
+        doneCount,
         weekProgress,
-        mustTotal: musts.length,
-        mustDone,
-        inboxCount,
-        momentsTotal: totalMin,
       }}
     />
   );
