@@ -19,4 +19,5 @@ export interface DashboardStats {
   totalBlocks: number;
   mustDone: number;
   mustTotal: number;
+  momentsTotal: number;
 }
