@@ -1,16 +1,33 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/db";
 import { rpmBlocks, actions, areas, roles, captures } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { DashboardClient } from "@/components/dashboard-client";
 
 export default async function HomePage() {
-  const [rawBlocks, allActions, areaList, roleList, captureList] = await Promise.all([
-    db.select().from(rpmBlocks).where(eq(rpmBlocks.status, "active")),
-    db.select().from(actions),
-    db.select().from(areas),
-    db.select().from(roles),
-    db.select().from(captures).where(eq(captures.status, "inbox")),
-  ]);
+  let rawBlocks: typeof rpmBlocks.$inferSelect[] = [];
+  let allActions: typeof actions.$inferSelect[] = [];
+  let areaList: typeof areas.$inferSelect[] = [];
+  let roleList: typeof roles.$inferSelect[] = [];
+  let captureList: typeof captures.$inferSelect[] = [];
+
+  try {
+    const res = await Promise.all([
+      db.select().from(rpmBlocks).where(eq(rpmBlocks.status, "active")),
+      db.select().from(actions),
+      db.select().from(areas),
+      db.select().from(roles),
+      db.select().from(captures).where(eq(captures.status, "inbox")),
+    ]);
+    rawBlocks = res[0];
+    allActions = res[1];
+    areaList = res[2];
+    roleList = res[3];
+    captureList = res[4];
+  } catch (error) {
+    console.warn("Erreur de requête base de données sur l'accueil (tables/colonnes manquantes) :", error);
+  }
 
   const blocks = rawBlocks.map((block) => {
     const blockActions = allActions.filter((a) => a.blockId === block.id);
