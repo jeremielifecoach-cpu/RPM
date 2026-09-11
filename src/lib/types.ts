@@ -15,4 +15,6 @@ export interface DashboardStats {
   doneCount: number;
   weekProgress: number;
   inboxCount: number;
+  activeBlocks: number;
+  totalBlocks: number;
 }
