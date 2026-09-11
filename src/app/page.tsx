@@ -50,6 +50,10 @@ export default async function HomePage() {
   const mustDone = allActions.filter((a) => a.isMust && a.isDone).length;
   const mustTotal = allActions.filter((a) => a.isMust).length;
 
+  const momentsTotal = allActions
+    .filter((a) => !a.isDone)
+    .reduce((s, a) => s + (a.minutes || 0), 0);
+
   const now = new Date();
   const todayLabel = now.toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -73,6 +77,7 @@ export default async function HomePage() {
         totalBlocks,
         mustDone,
         mustTotal,
+        momentsTotal,
       }}
     />
   );
