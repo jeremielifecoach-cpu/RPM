@@ -34,11 +34,10 @@ export function RolesClient({ roles, values = [] }: RolesClientProps) {
     if (!newRoleName.trim()) return;
 
     try {
-      const res = await api("/roles", {
+      const created = await api<Role>("/roles", {
         method: "POST",
         body: JSON.stringify({ name: newRoleName.trim() }),
       });
-      const created = await res.json();
       setRoleList((prev) => [...prev, created]);
       setNewRoleName("");
       refresh();
