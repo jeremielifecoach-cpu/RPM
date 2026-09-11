@@ -17,4 +17,6 @@ export interface DashboardStats {
   inboxCount: number;
   activeBlocks: number;
   totalBlocks: number;
+  mustDone: number;
+  mustTotal: number;
 }
