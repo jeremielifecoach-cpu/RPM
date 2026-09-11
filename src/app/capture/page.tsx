@@ -7,6 +7,7 @@ import {
   getCaptures,
   getRoles,
 } from "@/lib/data";
+import { weekKeyOf } from "@/lib/date";
 import { CaptureClient } from "@/components/capture-client";
 
 export default async function CapturePage() {
@@ -26,11 +27,14 @@ export default async function CapturePage() {
     console.warn("Erreur lors du chargement des captures:", e);
   }
 
+  const weekKey = weekKeyOf(new Date());
+
   return (
     <CaptureClient
       captures={captures}
       areas={areas}
       roles={roles}
+      weekKey={weekKey}
     />
   );
 }
