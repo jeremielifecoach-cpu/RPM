@@ -12,7 +12,7 @@ export default async function HomePage() {
     db.select().from(captures).where(eq(captures.status, "inbox")),
   ]);
 
-  // Assembler la structure BlockFull[] attendue par DashboardClient
+  // Assembler la structure BlockFull complète
   const blocks = rawBlocks.map((block) => {
     const blockActions = allActions.filter((a) => a.blockId === block.id);
     const area = areaList.find((a) => a.id === block.areaId) || null;
@@ -20,6 +20,7 @@ export default async function HomePage() {
     const doneCount = blockActions.filter((a) => a.isDone).length;
     const totalCount = blockActions.length;
     const progress = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
+    const mustLeft = blockActions.filter((a) => a.isMust && !a.isDone).length;
 
     return {
       ...block,
@@ -29,10 +30,10 @@ export default async function HomePage() {
       doneCount,
       totalCount,
       progress,
+      mustLeft,
     };
   });
 
-  // Calculer les statistiques globales du dashboard
   const totalMin = allActions
     .filter((a) => !a.isDone)
     .reduce((s, a) => s + (a.minutes || 0), 0);
