@@ -8,8 +8,10 @@ import type { Role } from "@/db/schema";
 
 export interface ValueItem {
   id: string;
-  name: string;
+  title?: string;
+  name?: string;
   description?: string | null;
+  rank?: number;
 }
 
 interface RolesClientProps {
@@ -67,7 +69,7 @@ export function RolesClient({ roles, values = [] }: RolesClientProps) {
       <form onSubmit={addRole} className="flex gap-2">
         <input
           type="text"
-          placeholder="Nouveau rôle (ex: CEO, Pére inspirant, Athlète)..."
+          placeholder="Nouveau rôle (ex: CEO, Père inspirant, Athlète)..."
           value={newRoleName}
           onChange={(e) => setNewRoleName(e.target.value)}
           className="flex-1 rounded-xl bg-[#171513] border border-amber-500/20 px-4 py-3 text-xs text-amber-100 placeholder-amber-200/30 focus:outline-none focus:border-amber-500/50"
@@ -97,6 +99,29 @@ export function RolesClient({ roles, values = [] }: RolesClientProps) {
           </div>
         ))}
       </div>
+
+      {values.length > 0 && (
+        <div className="space-y-3 pt-6 border-t border-amber-500/10">
+          <h2 className="text-sm font-bold text-amber-400 uppercase tracking-wider">
+            Valeurs de Vie
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {values.map((v) => (
+              <div
+                key={v.id}
+                className="rounded-xl border border-amber-500/10 bg-[#121110] p-3 text-xs"
+              >
+                <div className="font-bold text-amber-200">
+                  {v.title || v.name}
+                </div>
+                {v.description && (
+                  <p className="text-amber-200/60 mt-1">{v.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
