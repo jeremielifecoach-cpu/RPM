@@ -31,7 +31,7 @@ export default async function CapturePage() {
 
   return (
     <CaptureClient
-      initialCaptures={captures}
+      captures={captures}
       areas={areas}
       roles={roles}
       currentWeek={currentWeek}
