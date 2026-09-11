@@ -1,6 +1,14 @@
 import { db } from "@/db";
-import { areas, roles, values } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  areas,
+  roles,
+  rpmBlocks,
+  actions,
+  captures,
+  journalEntries,
+} from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+import type { BlockFull } from "@/lib/types";
 
 export async function getAreas() {
   return await db.select().from(areas);
@@ -11,7 +19,44 @@ export async function getRoles() {
 }
 
 export async function getValues() {
-  return await db.select().from(values);
+  return [];
+}
+
+export async function getCaptures() {
+  return await db.select().from(captures);
+}
+
+export async function getJournal() {
+  return await db.select().from(journalEntries).orderBy(desc(journalEntries.date));
+}
+
+export async function getBlockFull(id: string): Promise<BlockFull | null> {
+  const [block] = await db.select().from(rpmBlocks).where(eq(rpmBlocks.id, id));
+  if (!block) return null;
+
+  const [blockActions, areaList, roleList] = await Promise.all([
+    db.select().from(actions).where(eq(actions.blockId, id)),
+    db.select().from(areas),
+    db.select().from(roles),
+  ]);
+
+  const area = areaList.find((a) => a.id === block.areaId) || null;
+  const role = roleList.find((r) => r.id === block.roleId) || null;
+  const doneCount = blockActions.filter((a) => a.isDone).length;
+  const totalCount = blockActions.length;
+  const progress = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
+  const mustLeft = blockActions.filter((a) => a.isMust && !a.isDone).length;
+
+  return {
+    ...block,
+    actions: blockActions,
+    area,
+    role,
+    doneCount,
+    totalCount,
+    progress,
+    mustLeft,
+  };
 }
 
 export async function ensureAreasSeeded() {
@@ -38,15 +83,6 @@ export async function ensureRolesValuesSeeded() {
       { id: crypto.randomUUID(), name: "Leader Inspirant" },
       { id: crypto.randomUUID(), name: "Partenaire Aimant" },
       { id: crypto.randomUUID(), name: "Athlète Vital" },
-    ]);
-  }
-
-  const existingValues = await db.select().from(values);
-  if (existingValues.length === 0) {
-    await db.insert(values).values([
-      { id: crypto.randomUUID(), title: "Amour & Compassion", description: "Inconditionnel", rank: 1 },
-      { id: crypto.randomUUID(), title: "Croissance continue", description: "Apprendre chaque jour", rank: 2 },
-      { id: crypto.randomUUID(), title: "Liberté d'action", description: "Autonomie totale", rank: 3 },
     ]);
   }
 }
