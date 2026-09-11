@@ -1,18 +1,16 @@
 import { db } from "@/db";
-import { rpmBlocks, actions, areas, roles, captures } from "@/db/schema";
+import { rpmBlocks, actions, areas, roles } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { DashboardClient } from "@/components/dashboard-client";
 
 export default async function HomePage() {
-  const [rawBlocks, allActions, areaList, roleList, captureList] = await Promise.all([
+  const [rawBlocks, allActions, areaList, roleList] = await Promise.all([
     db.select().from(rpmBlocks).where(eq(rpmBlocks.status, "active")),
     db.select().from(actions),
     db.select().from(areas),
     db.select().from(roles),
-    db.select().from(captures).where(eq(captures.status, "inbox")),
   ]);
 
-  // Assembler la structure BlockFull complète
   const blocks = rawBlocks.map((block) => {
     const blockActions = allActions.filter((a) => a.blockId === block.id);
     const area = areaList.find((a) => a.id === block.areaId) || null;
@@ -44,12 +42,20 @@ export default async function HomePage() {
       ? 0
       : Math.round((doneCount / allActions.length) * 100);
 
+  const now = new Date();
+  const todayLabel = now.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   return (
     <DashboardClient
-      blocks={blocks}
-      actions={allActions}
+      weekKey="current"
+      weekLabel="Semaine en cours"
+      todayLabel={todayLabel}
       areas={areaList}
-      captures={captureList}
+      blocks={blocks}
       stats={{
         totalMustMin,
         doneCount,
