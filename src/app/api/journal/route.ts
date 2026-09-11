@@ -4,20 +4,29 @@ import { journalEntries } from "@/db/schema";
 import { todayISO } from "@/lib/date";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const content = String(body?.content ?? "").trim();
-  if (!content)
-    return NextResponse.json({ error: "Contenu requis" }, { status: 400 });
-  const type = ["gratitude", "victoire", "reflexion"].includes(body?.type)
-    ? body.type
-    : "gratitude";
-  const [row] = await db
-    .insert(journalEntries)
-    .values({
-      content,
-      type,
-      date: String(body?.date ?? todayISO()),
-    })
-    .returning();
-  return NextResponse.json(row, { status: 201 });
+  try {
+    const body = await req.json();
+    const { wins, gratitude, lessons, energyScore, date } = body;
+
+    const journalId = `journal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const [row] = await db
+      .insert(journalEntries)
+      .values({
+        id: journalId,
+        date: String(date || todayISO()),
+        wins: wins || "",
+        gratitude: gratitude || "",
+        lessons: lessons || "",
+        energyScore: energyScore ?? 5,
+      })
+      .returning();
+
+    return NextResponse.json(row, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erreur lors de la création de l'entrée de journal" },
+      { status: 500 }
+    );
+  }
 }
