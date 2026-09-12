@@ -18,7 +18,6 @@ export default async function HomePage() {
     const actionsData = res[2] || [];
     const rolesData = res[3] || [];
 
-    // Formatage des blocs complets avec leurs actions associées
     const formattedBlocks = blocksData.map((block) => ({
       ...block,
       actions: actionsData.filter((action) => action.blockId === block.id),
