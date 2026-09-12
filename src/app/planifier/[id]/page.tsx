@@ -41,4 +41,4 @@ export default async function PlanifierDetailPage({ params }: PageProps) {
   };
 
   return <BlockDetailClient block={fullBlock as any} areas={areas as any} roles={roles as any} />;
-}
+    }
