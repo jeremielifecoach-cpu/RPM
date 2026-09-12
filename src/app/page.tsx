@@ -1,20 +1,52 @@
-import { getDashboardData } from "@/lib/data";
+import { db } from "@/db";
+import { rpmBlocks, actions, areas, roles } from "@/db/schema";
 import { DashboardClient } from "@/components/dashboard-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   try {
-    const data = await getDashboardData();
+    const res = await Promise.all([
+      db.select().from(areas),
+      db.select().from(rpmBlocks),
+      db.select().from(actions),
+      db.select().from(roles),
+    ]);
+
+    const areasData = res[0] || [];
+    const blocksData = res[1] || [];
+    const actionsData = res[2] || [];
+    const rolesData = res[3] || [];
+
+    // Formatage des blocs complets avec leurs actions associées
+    const formattedBlocks = blocksData.map((block) => ({
+      ...block,
+      actions: actionsData.filter((action) => action.blockId === block.id),
+    }));
+
+    const stats = {
+      actionsCount: actionsData.length,
+      mustActionsCount: actionsData.filter((a) => a.priority === 1).length,
+      blocksCount: blocksData.length,
+      activeAreasCount: areasData.length,
+      completedActionsCount: actionsData.filter((a) => a.completed).length,
+    };
+
+    const today = new Date();
+    const todayLabel = today.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
 
     return (
       <DashboardClient
-        weekKey={data.weekKey}
-        weekLabel={data.weekLabel}
-        todayLabel={data.todayLabel}
-        areas={data.areas}
-        blocks={data.blocks}
-        stats={data.stats}
+        weekKey="current"
+        weekLabel="Semaine en cours"
+        todayLabel={todayLabel}
+        areas={areasData as any}
+        blocks={formattedBlocks as any}
+        stats={stats}
       />
     );
   } catch (error) {
