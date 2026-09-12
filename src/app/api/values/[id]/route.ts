@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { values } from "@/db/schema";
+import { valuesTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function DELETE(
@@ -11,7 +11,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await db.delete(values).where(eq(values.id, id));
+    await db.delete(valuesTable).where(eq(valuesTable.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erreur suppression valeur:", error);
