@@ -2,12 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { visionsTable } from "@/db/schema";
+import { visionTable } from "@/db/schema";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const newVision = await db.insert(visionsTable).values(body).returning();
+    const newVision = await db.insert(visionTable).values(body).returning();
     return NextResponse.json(newVision[0]);
   } catch (error) {
     console.error("Erreur création vision:", error);
