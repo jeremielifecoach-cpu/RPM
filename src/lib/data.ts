@@ -103,4 +103,5 @@ export async function getDashboardData() {
     blocks: formattedBlocks,
     stats,
   };
-      }
+    }
+    
