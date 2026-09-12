@@ -11,17 +11,21 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
+    const updateData: Record<string, any> = {};
+    if (body.score !== undefined) updateData.score = Number(body.score);
+    if (body.focus !== undefined) updateData.focus = body.focus;
+
     const updated = await db
       .update(areas)
-      .set(body)
+      .set(updateData)
       .where(eq(areas.id, id))
       .returning();
 
     return NextResponse.json(updated[0]);
   } catch (error) {
-    console.error("Erreur mise à jour domaine:", error);
+    console.error("Erreur mise à jour area:", error);
     return NextResponse.json(
-      { error: "Erreur serveur lors de la mise à jour" },
+      { error: "Erreur lors de la mise à jour" },
       { status: 500 }
     );
   }
