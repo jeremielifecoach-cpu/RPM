@@ -1,15 +1,14 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { areas } from "@/db/schema";
+import { getAreas } from "@/lib/data";
 
 export async function GET() {
   try {
-    const data = await db.select().from(areas);
+    const data = await getAreas();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur GET /api/areas:", error);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json(
+      { error: "Erreur lors du chargement des domaines" },
+      { status: 500 }
+    );
   }
 }
