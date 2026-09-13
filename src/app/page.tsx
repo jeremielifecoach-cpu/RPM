@@ -1,11 +1,16 @@
 import { db } from "@/db";
 import { rpmBlocks, actions, areas, roles, captures } from "@/db/schema";
 import { DashboardClient } from "@/components/dashboard-client";
+import { ensureAreasSeeded } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
   try {
+    // S'assurer que les domaines de base existent dans la base Neon
+    await ensureAreasSeeded();
+
     const res = await Promise.all([
       db.select().from(areas),
       db.select().from(rpmBlocks),
