@@ -1,19 +1,26 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { roles } from "@/db/schema";
+import { getRoles } from "@/lib/data";
 
-export async function POST(req: Request) {
+export async function GET() {
   try {
-    const body = await req.json();
-    const newRole = await db.insert(roles).values(body).returning();
-    return NextResponse.json(newRole[0]);
+    const data = await getRoles();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur création rôle:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la création du rôle" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erreur rôles" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { name, description } = await request.json();
+    const created = await db
+      .insert(roles)
+      .values({ id: crypto.randomUUID(), name, description })
+      .returning();
+    return NextResponse.json(created[0]);
+  } catch (error) {
+    return NextResponse.json({ error: "Erreur création rôle" }, { status: 500 });
   }
 }
