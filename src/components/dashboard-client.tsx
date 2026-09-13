@@ -239,7 +239,7 @@ export function DashboardClient({
                     </div>
                     <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" />
                     <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-zinc-400">
-                      {action.minutes}&apos;
+                      {action.minutes ?? 0}&apos;
                     </span>
                   </li>
                 ))}
@@ -396,7 +396,7 @@ export function DashboardClient({
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
-                        width: `${a.score * 10}%`,
+                        width: `${(a.score ?? 0) * 10}%`,
                         backgroundColor: a.color || undefined,
                       }}
                     />
@@ -405,7 +405,7 @@ export function DashboardClient({
                     className="w-9 text-right text-xs font-bold tabular-nums"
                     style={{ color: a.color || undefined }}
                   >
-                    {a.score}/10
+                    {a.score ?? 0}/10
                   </span>
                 </li>
               ))}
