@@ -1,16 +1,29 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { captures } from "@/db/schema";
+import { getCaptures } from "@/lib/data";
 
-export async function POST(req: Request) {
+export async function GET() {
   try {
-    const body = await req.json();
-    const newCapture = await db.insert(captures).values(body).returning();
-    return NextResponse.json(newCapture[0]);
+    const data = await getCaptures();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur création capture:", error);
+    return NextResponse.json(
+      { error: "Erreur lors du chargement des captures" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { content } = await request.json();
+    const created = await db
+      .insert(captures)
+      .values({ content })
+      .returning();
+    return NextResponse.json(created[0]);
+  } catch (error) {
     return NextResponse.json(
       { error: "Erreur lors de la création de la capture" },
       { status: 500 }
