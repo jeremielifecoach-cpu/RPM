@@ -292,7 +292,7 @@ export function BlockDetailClient({
                   color: block.area.color || undefined,
                 }}
               >
-                <AreaIcon icon={block.area.icon} className="h-3 w-3" />
+                <AreaIcon icon={block.area.icon || ""} className="h-3 w-3" />
                 {block.area.name}
               </span>
             )}
