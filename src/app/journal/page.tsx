@@ -19,7 +19,8 @@ export default function JournalPage() {
   useEffect(() => {
     async function loadJournal() {
       try {
-        const res = await fetch("/api/journal");
+        // L'instruction { cache: "no-store" } force la lecture de la base de données en direct
+        const res = await fetch("/api/journal", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setEntries(data);
@@ -58,7 +59,7 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8 p-4 sm:p-6">
       <div>
         <Link
           href="/"
@@ -72,11 +73,11 @@ export default function JournalPage() {
           Journal de <span className="italic text-amber-300">Bord</span>
         </h1>
         <p className="mt-1 text-xs text-zinc-400">
-          Note tes réflexions, victoires et leçons quotidiennes.
+          Note tes réflexions, victoires et leçons. (Sauvegarde en temps réel)
         </p>
       </div>
 
-      <form onSubmit={handleAdd} className="space-y-3">
+      <form onSubmit={handleAdd} className="space-y-3 rounded-2xl border border-white/10 bg-[#0d0d10] p-5 shadow-xl">
         <textarea
           rows={4}
           value={content}
@@ -84,14 +85,16 @@ export default function JournalPage() {
           placeholder="Qu'as-tu appris ou accompli aujourd'hui ?"
           className="w-full rounded-xl border border-white/10 bg-black/40 p-4 text-sm text-zinc-100 outline-none focus:border-amber-500/50"
         />
-        <button
-          type="submit"
-          disabled={saving || !content.trim()}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-amber-400 disabled:opacity-40 transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          Enregistrer l&apos;entrée
-        </button>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saving || !content.trim()}
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-amber-400 disabled:opacity-40 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Enregistrer
+          </button>
+        </div>
       </form>
 
       <div className="space-y-3">
@@ -101,19 +104,16 @@ export default function JournalPage() {
           </div>
         ) : entries.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-xs text-zinc-500">
-            Aucune entrée dans ton journal pour le moment.
+            Ton journal est vide.
           </div>
         ) : (
           <div className="space-y-3">
             {entries.map((e) => (
-              <div key={e.id} className="rounded-xl border border-white/10 bg-[#0d0d10] p-4 text-sm text-zinc-200">
-                <p className="whitespace-pre-wrap">{e.content}</p>
-                <span className="mt-2 block text-[10px] text-zinc-500">
+              <div key={e.id} className="rounded-xl border border-white/10 bg-[#0d0d10] p-5 text-sm text-zinc-200 shadow-md">
+                <p className="whitespace-pre-wrap leading-relaxed">{e.content}</p>
+                <span className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-amber-500/60">
                   {new Date(e.createdAt).toLocaleDateString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    day: "numeric",
-                    month: "short",
+                    hour: "2-digit", minute: "2-digit", day: "numeric", month: "long"
                   })}
                 </span>
               </div>
