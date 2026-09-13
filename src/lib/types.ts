@@ -1,4 +1,4 @@
-import type { Area, Role, RpmBlock, ActionItem, Capture } from "@/db/schema";
+import type { Area, Role, RpmBlock, ActionItem } from "@/db/schema";
 
 export interface BlockFull extends RpmBlock {
   actions: ActionItem[];
