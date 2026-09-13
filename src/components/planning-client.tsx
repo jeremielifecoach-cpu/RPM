@@ -322,7 +322,7 @@ export function PlanningClient({
                             {block.actions.map((act) => (
                               <div
                                 key={act.id}
-                                onClick={() => handleToggleActionDone(block.id, act.id, act.isDone)}
+                               handleToggleActionDone(block.id, act.id, !(act.isDone ?? false))
                                 className="flex items-center gap-2 text-xs p-1.5 rounded bg-black/40 border border-amber-500/10 hover:border-amber-500/30 cursor-pointer transition-all"
                               >
                                 <input
