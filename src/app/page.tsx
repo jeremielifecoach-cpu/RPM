@@ -17,32 +17,47 @@ export default async function HomePage() {
     const areasData = res[0] || [];
     const blocksData = res[1] || [];
     const actionsData = res[2] || [];
-    const rolesData = res[3] || [];
     const capturesData = res[4] || [];
 
-    const formattedBlocks = blocksData.map((block) => ({
-      ...block,
-      actions: actionsData.filter((action) => action.blockId === block.id),
-    }));
+    const formattedBlocks = blocksData.map((block) => {
+      const blockActions = actionsData.filter((a) => a.blockId === block.id);
+      const doneCount = blockActions.filter((a) => a.isDone || a.completed).length;
+      const totalCount = blockActions.length;
+      const progress = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+      const mustLeft = blockActions.filter((a) => a.isMust && !a.isDone).length;
 
-    const actionsCount = actionsData.length;
-    const completedActionsCount = actionsData.filter((a) => a.completed).length;
-    const weekProgress = actionsCount > 0 ? Math.round((completedActionsCount / actionsCount) * 100) : 0;
+      return {
+        ...block,
+        actions: blockActions,
+        area: areasData.find((a) => a.id === block.areaId) || null,
+        role: null,
+        doneCount,
+        totalCount,
+        progress,
+        mustLeft,
+      };
+    });
+
+    const activeBlocks = formattedBlocks.filter((b) => b.status === "active").length;
+    const totalCount = actionsData.length;
+    const doneCount = actionsData.filter((a) => a.isDone || a.completed).length;
+    const weekProgress = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+    const musts = actionsData.filter((a) => a.isMust);
+    const mustDone = musts.filter((a) => a.isDone || a.completed).length;
+    const momentsTotal = actionsData
+      .filter((a) => !a.isDone && !a.completed)
+      .reduce((acc, curr) => acc + (curr.minutes || 15), 0);
 
     const stats = {
-      actionsCount,
-      mustActionsCount: actionsData.filter((a) => a.priority === 1).length,
-      blocksCount: blocksData.length,
-      activeAreasCount: areasData.length,
-      completedActionsCount,
       totalMustMin: 0,
-      doneCount: completedActionsCount,
+      doneCount,
       weekProgress,
-      inboxCount: capturesData.filter((c) => !c.processed).length,
-      mustCount: actionsData.filter((a) => a.priority === 1).length,
-      totalCount: actionsCount,
-      mustDone: actionsData.filter((a) => a.priority === 1 && a.completed).length,
-      mustMinLeft: 0,
+      inboxCount: capturesData.filter((c) => c.status !== "processed" && !c.processed).length,
+      activeBlocks,
+      totalBlocks: blocksData.length,
+      mustDone,
+      mustTotal: musts.length,
+      momentsTotal,
     };
 
     const today = new Date();
@@ -59,7 +74,7 @@ export default async function HomePage() {
         todayLabel={todayLabel}
         areas={areasData as any}
         blocks={formattedBlocks as any}
-        stats={stats as any}
+        stats={stats}
       />
     );
   } catch (error) {
@@ -72,22 +87,17 @@ export default async function HomePage() {
         areas={[]}
         blocks={[]}
         stats={{
-          actionsCount: 0,
-          mustActionsCount: 0,
-          blocksCount: 0,
-          activeAreasCount: 0,
-          completedActionsCount: 0,
           totalMustMin: 0,
           doneCount: 0,
           weekProgress: 0,
           inboxCount: 0,
-          mustCount: 0,
-          totalCount: 0,
+          activeBlocks: 0,
+          totalBlocks: 0,
           mustDone: 0,
-          mustMinLeft: 0,
-        } as any}
+          mustTotal: 0,
+          momentsTotal: 0,
+        }}
       />
     );
   }
-        }
-  
+}
