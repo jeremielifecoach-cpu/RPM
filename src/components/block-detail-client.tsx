@@ -202,7 +202,7 @@ export function BlockDetailClient({
         <div className="space-y-5">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-zinc-500">
-              {weekRangeLabel(block.weekStart)}
+              {weekRangeLabel(block.weekStart || "")}
               {isVictory && (
                 <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-black text-emerald-400">
                   VICTOIRE
