@@ -149,7 +149,7 @@ export function PlanningClient({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-amber-500">
-              Étape 3 · Plan d'action massif
+              Étape 3 · Plan d&apos;action massif
             </span>
             <h1 className="text-3xl font-extrabold tracking-tight text-amber-50">
               Planification <span className="italic text-amber-400">RPM</span>
@@ -250,10 +250,10 @@ export function PlanningClient({
             <div className="grid gap-6 md:grid-cols-2">
               {filteredBlocks.map((block) => {
                 const totalActions = block.actions?.length || 0;
-                const doneActions = block.actions?.filter((a) => a.isDone).length || 0;
+                const doneActions = block.actions?.filter((a) => a.isDone === true).length || 0;
                 const progress = totalActions > 0 ? Math.round((doneActions / totalActions) * 100) : 0;
-                const mustCount = block.actions?.filter((a) => a.isMust).length || 0;
-                const isContinuation = block.result.startsWith("[Suite]");
+                const mustCount = block.actions?.filter((a) => a.isMust === true).length || 0;
+                const isContinuation = (block.result || "").startsWith("[Suite]");
                 const isVictory = block.status === "victory";
 
                 return (
@@ -297,7 +297,7 @@ export function PlanningClient({
                           R · Résultat
                         </span>
                         <h3 className={`text-base font-bold mt-0.5 ${isVictory ? "text-emerald-100 line-through decoration-emerald-500/50" : "text-amber-100"}`}>
-                          {block.result.replace("[Suite] ", "")}
+                          {(block.result || "").replace("[Suite] ", "")}
                         </h3>
                       </div>
 
@@ -307,7 +307,7 @@ export function PlanningClient({
                             P · Pourquoi
                           </span>
                           <p className="text-xs text-amber-200/60 italic line-clamp-2 mt-0.5">
-                            "{block.purpose}"
+                            &quot;{block.purpose}&quot;
                           </p>
                         </div>
                       )}
@@ -322,12 +322,12 @@ export function PlanningClient({
                             {block.actions.map((act) => (
                               <div
                                 key={act.id}
-                               handleToggleActionDone(block.id, act.id, !(act.isDone ?? false))
+                                onClick={() => handleToggleActionDone(block.id, act.id, act.isDone ?? false)}
                                 className="flex items-center gap-2 text-xs p-1.5 rounded bg-black/40 border border-amber-500/10 hover:border-amber-500/30 cursor-pointer transition-all"
                               >
                                 <input
                                   type="checkbox"
-                                  checked={act.isDone}
+                                  checked={act.isDone ?? false}
                                   onChange={() => {}}
                                   className="rounded border-amber-500/30 bg-black text-amber-500 focus:ring-0"
                                 />
@@ -450,7 +450,7 @@ export function PlanningClient({
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] text-amber-200/50">
-                    <span>Semaine du {formatDateFr(block.weekStart)}</span>
+                    <span>Semaine du {formatDateFr(block.weekStart || "")}</span>
                     <span className="uppercase text-[9px] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold">
                       {block.status || "Actif"}
                     </span>
