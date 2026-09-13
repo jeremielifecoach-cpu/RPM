@@ -288,8 +288,8 @@ export function BlockDetailClient({
               <span
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest"
                 style={{
-                  backgroundColor: `${block.area.color}1e`,
-                  color: block.area.color,
+                  backgroundColor: block.area.color ? `${block.area.color}1e` : undefined,
+                  color: block.area.color || undefined,
                 }}
               >
                 <AreaIcon icon={block.area.icon} className="h-3 w-3" />
