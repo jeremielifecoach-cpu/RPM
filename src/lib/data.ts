@@ -40,14 +40,17 @@ export async function ensureRolesValuesSeeded() {
 }
 
 export async function getAreas() {
+  await ensureAreasSeeded();
   return await db.select().from(areas);
 }
 
 export async function getRoles() {
+  await ensureRolesValuesSeeded();
   return await db.select().from(roles);
 }
 
 export async function getValues() {
+  await ensureRolesValuesSeeded();
   return await db.select().from(valuesTable);
 }
 
@@ -68,6 +71,9 @@ export async function getBlockFull(id: string) {
 }
 
 export async function getDashboardData() {
+  await ensureAreasSeeded();
+  await ensureRolesValuesSeeded();
+
   const [areasData, blocksData, actionsData, rolesData] = await Promise.all([
     db.select().from(areas),
     db.select().from(rpmBlocks),
