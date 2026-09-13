@@ -1,19 +1,26 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { journalEntries } from "@/db/schema";
+import { getJournal } from "@/lib/data";
 
-export async function POST(req: Request) {
+export async function GET() {
   try {
-    const body = await req.json();
-    const newEntry = await db.insert(journalEntries).values(body).returning();
-    return NextResponse.json(newEntry[0]);
+    const data = await getJournal();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur création journal:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la création de l'entrée journal" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erreur chargement journal" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { content } = await request.json();
+    const created = await db
+      .insert(journalEntries)
+      .values({ id: crypto.randomUUID(), content })
+      .returning();
+    return NextResponse.json(created[0]);
+  } catch (error) {
+    return NextResponse.json({ error: "Erreur enregistrement journal" }, { status: 500 });
   }
 }
