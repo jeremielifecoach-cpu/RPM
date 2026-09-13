@@ -97,7 +97,10 @@ export const lifeVisionDomains = pgTable("life_vision_domains", {
 
 export const quarterlyMilestones = pgTable("quarterly_milestones", {
   id: text("id").primaryKey(),
-  title: text("title").notNull(),
+  domainId: text("domain_id").references(() => lifeVisionDomains.id),
+  title: text("title"),
+  quarter: text("quarter").notNull(),
+  targetOutcome: text("target_outcome"),
   completed: boolean("completed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
