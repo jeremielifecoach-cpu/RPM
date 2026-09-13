@@ -1,10 +1,20 @@
 import { db } from "@/db";
 import { areas as areasTable, roles as rolesTable, rpmBlocks, actions } from "@/db/schema";
-import { PlanifierClient } from "@/components/planifier-client";
+import { PlanningClient } from "@/components/planning-client";
+import { weekKeyOf, addWeeks } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export default async function PlanifierPage() {
+interface PageProps {
+  searchParams: Promise<{ semaine?: string }>;
+}
+
+export default async function PlanifierPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const currentWeekKey = params?.semaine || weekKeyOf(new Date());
+  const prevWeekKey = addWeeks(currentWeekKey, -1);
+  const nextWeekKey = addWeeks(currentWeekKey, 1);
+
   try {
     const [areas, roles, blocksData, actionsData] = await Promise.all([
       db.select().from(areasTable),
@@ -18,24 +28,28 @@ export default async function PlanifierPage() {
       actions: actionsData.filter((a) => a.blockId === block.id),
       area: areas.find((a) => a.id === block.areaId) || null,
       role: roles.find((r) => r.id === block.roleId) || null,
-      doneCount: actionsData.filter((a) => a.blockId === block.id && a.completed).length,
-      totalCount: actionsData.filter((a) => a.blockId === block.id).length,
     }));
 
     return (
-      <PlanifierClient
-        areas={areas as any}
-        roles={roles as any}
+      <PlanningClient
+        areas={areas}
+        roles={roles}
         blocks={formattedBlocks as any}
+        weekKey={currentWeekKey}
+        prevWeekKey={prevWeekKey}
+        nextWeekKey={nextWeekKey}
       />
     );
   } catch (error) {
     console.error("Erreur PlanifierPage:", error);
     return (
-      <PlanifierClient
+      <PlanningClient
         areas={[]}
         roles={[]}
         blocks={[]}
+        weekKey={currentWeekKey}
+        prevWeekKey={prevWeekKey}
+        nextWeekKey={nextWeekKey}
       />
     );
   }
