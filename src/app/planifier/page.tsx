@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { areas as areasTable, roles as rolesTable, rpmBlocks, actions } from "@/db/schema";
-import { PlanifierClient } from "@/components/planifier-client";
+import PlanifierPageClient from "@/components/planifier-page-client";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ export default async function PlanifierPage() {
     }));
 
     return (
-      <PlanifierClient
+      <PlanifierPageClient
         areas={areas as any}
         roles={roles as any}
         blocks={formattedBlocks as any}
@@ -32,7 +32,7 @@ export default async function PlanifierPage() {
   } catch (error) {
     console.error("Erreur PlanifierPage:", error);
     return (
-      <PlanifierClient
+      <PlanifierPageClient
         areas={[]}
         roles={[]}
         blocks={[]}
