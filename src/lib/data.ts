@@ -25,8 +25,8 @@ export async function ensureRolesValuesSeeded() {
   const existingRoles = await db.select().from(roles);
   if (existingRoles.length === 0) {
     await db.insert(roles).values([
-      { id: "role-1", areaId: "area-1", title: "Athlète conscient", description: "Prendre soin du corps" },
-      { id: "role-2", areaId: "area-2", title: "Entrepreneur visionnaire", description: "Bâtir des projets" },
+      { id: "role-1", areaId: "area-1", name: "Athlète conscient", description: "Prendre soin du corps" },
+      { id: "role-2", areaId: "area-2", name: "Entrepreneur visionnaire", description: "Bâtir des projets" },
     ]);
   }
 
@@ -104,4 +104,3 @@ export async function getDashboardData() {
     stats,
   };
 }
-
