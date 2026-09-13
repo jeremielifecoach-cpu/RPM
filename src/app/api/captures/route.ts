@@ -20,7 +20,10 @@ export async function POST(request: Request) {
     const { content } = await request.json();
     const created = await db
       .insert(captures)
-      .values({ content })
+      .values({
+        id: crypto.randomUUID(),
+        content,
+      })
       .returning();
     return NextResponse.json(created[0]);
   } catch (error) {
