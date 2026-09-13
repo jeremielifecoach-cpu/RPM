@@ -385,9 +385,9 @@ export function DashboardClient({
                 <li key={a.id} className="flex items-center gap-3">
                   <span
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-white/[0.06] bg-white/[0.03]"
-                    style={{ color: a.color }}
+                    style={{ color: a.color || undefined }}
                   >
-                    <AreaIcon icon={a.icon} className="h-3.5 w-3.5" />
+                    <AreaIcon icon={a.icon || ""} className="h-3.5 w-3.5" />
                   </span>
                   <span className="w-40 truncate text-xs font-medium text-zinc-300">
                     {a.name}
@@ -397,11 +397,14 @@ export function DashboardClient({
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${a.score * 10}%`,
-                        backgroundColor: a.color,
+                        backgroundColor: a.color || undefined,
                       }}
                     />
                   </div>
-                  <span className="w-9 text-right text-xs font-bold tabular-nums" style={{ color: a.color }}>
+                  <span
+                    className="w-9 text-right text-xs font-bold tabular-nums"
+                    style={{ color: a.color || undefined }}
+                  >
                     {a.score}/10
                   </span>
                 </li>
