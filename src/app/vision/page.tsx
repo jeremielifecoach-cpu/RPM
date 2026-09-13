@@ -5,9 +5,9 @@ import { lifeVisionDomains, quarterlyMilestones, areas as areasTable } from "@/d
 import { VisionClient } from "@/components/vision-client";
 
 export default async function VisionPage() {
-  let domains: typeof lifeVisionDomains.$inferSelect[] = [];
-  let milestones: typeof quarterlyMilestones.$inferSelect[] = [];
-  let areas: typeof areasTable.$inferSelect[] = [];
+  let domains: any[] = [];
+  let milestones: any[] = [];
+  let areas: any[] = [];
 
   try {
     const res = await Promise.all([
@@ -15,19 +15,20 @@ export default async function VisionPage() {
       db.select().from(quarterlyMilestones),
       db.select().from(areasTable),
     ]);
-    domains = res[0];
-    milestones = res[1];
-    areas = res[2];
+    domains = res[0] || [];
+    milestones = res[1] || [];
+    areas = res[2] || [];
   } catch (error) {
-    console.warn("Tables vision/milestones introuvables lors du chargement de la page Vision:", error);
+    console.warn("Erreur chargement VisionPage:", error);
   }
 
-  // Formater les domaines avec leurs jalons respectifs
   const formattedDomains = domains.map((domain) => {
     const domainMilestones = milestones.filter((m) => m.domainId === domain.id);
     const milestonesMap: Record<string, string> = {};
     domainMilestones.forEach((m) => {
-      milestonesMap[m.quarter] = m.targetOutcome;
+      if (m.quarter && m.targetOutcome) {
+        milestonesMap[m.quarter] = m.targetOutcome;
+      }
     });
 
     return {
@@ -38,9 +39,9 @@ export default async function VisionPage() {
 
   return (
     <VisionClient
-      initialDomains={formattedDomains}
-      initialMilestones={milestones}
-      areas={areas}
+      initialDomains={formattedDomains as any}
+      initialMilestones={milestones as any}
+      areas={areas as any}
     />
   );
 }
