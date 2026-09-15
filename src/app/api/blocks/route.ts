@@ -18,7 +18,7 @@ export async function GET() {
 
     return NextResponse.json(fullBlocks);
   } catch (error) {
-    return NextResponse.json({ error: "Erreur chargement" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lecture blocs" }, { status: 500 });
   }
 }
 
@@ -26,13 +26,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Mode Duplication ou Report
     if (body.actionType === "duplicate" || body.actionType === "carryOver") {
       const original = await db.select().from(rpmBlocks).where(eq(rpmBlocks.id, body.blockId));
-      if (original.length === 0) return NextResponse.json({ error: "Bloc introuvable" }, { status: 400 });
+      if (original.length === 0) return NextResponse.json({ error: "Bloc non trouvé" }, { status: 404 });
 
-      const newWeek = body.actionType === "carryOver" ? "next" : original[0].weekStart;
       const newBlockId = crypto.randomUUID();
+      const newWeek = body.actionType === "carryOver" ? "next" : original[0].weekStart;
 
       const [cloned] = await db
         .insert(rpmBlocks)
@@ -61,7 +60,6 @@ export async function POST(request: Request) {
       return NextResponse.json(cloned);
     }
 
-    // Mode Création Standard
     const blockId = crypto.randomUUID();
     const [newBlock] = await db
       .insert(rpmBlocks)
@@ -93,7 +91,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newBlock);
   } catch (error) {
-    console.error(error);
+    console.error("Erreur création bloc RPM :", error);
     return NextResponse.json({ error: "Erreur création bloc" }, { status: 500 });
   }
 }
