@@ -30,7 +30,7 @@ export default function DomainesPage() {
       if (res.ok) setAreasList(await res.json());
     } catch (err) {
       console.error(err);
-    } font-bold {
+    } finally {
       setLoading(false);
     }
   }
