@@ -74,12 +74,12 @@ export default function CapturePage() {
         </h1>
       </div>
 
-      <form onSubmit={handleAdd} className="space-y-3 rounded-2xl border border-white/10 bg-[#0d0d10] p-5">
+      <form onSubmit={handleAdd} className="space-y-3 rounded-2xl border border-white/10 bg-[#0d0d10] p-5 shadow-xl">
         <textarea
           rows={3}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Note ta pensée brute..."
+          placeholder="Qu'as-tu en tête ?"
           className="w-full rounded-xl border border-white/10 bg-black/40 p-3.5 text-sm text-zinc-100 outline-none"
         />
         <div className="flex justify-end">
@@ -91,34 +91,38 @@ export default function CapturePage() {
 
       <div className="space-y-3">
         <h2 className="text-xs font-bold text-zinc-400 uppercase">Boîte de réception ({captures.length})</h2>
-        {captures.map((item) => (
-          <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0d0d10] p-4 text-sm">
-            <span className="flex-1 font-medium text-zinc-200">{item.content}</span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => router.push(`/planifier?result=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
-                className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20"
-              >
-                <Target className="h-3 w-3" /> Comme Résultat (R)
-              </button>
-              <button
-                onClick={() => router.push(`/planifier?purpose=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
-                className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/20"
-              >
-                <HelpCircle className="h-3 w-3" /> Comme Pourquoi (P)
-              </button>
-              <button
-                onClick={() => router.push(`/planifier?action=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
-                className="flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20"
-              >
-                <CheckSquare className="h-3 w-3" /> Comme Action (M)
-              </button>
-              <button onClick={() => handleDelete(item.id)} className="p-1 text-zinc-600 hover:text-rose-400">
-                <Trash2 className="h-4 w-4" />
-              </button>
+        {loading ? (
+          <div className="p-6 text-center text-xs text-zinc-500">Chargement...</div>
+        ) : (
+          captures.map((item) => (
+            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0d0d10] p-4 text-sm">
+              <span className="flex-1 font-medium text-zinc-200">{item.content}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => router.push(`/planifier?result=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
+                  className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20"
+                >
+                  <Target className="h-3 w-3" /> Résultat (R)
+                </button>
+                <button
+                  onClick={() => router.push(`/planifier?purpose=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
+                  className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/20"
+                >
+                  <HelpCircle className="h-3 w-3" /> Pourquoi (P)
+                </button>
+                <button
+                  onClick={() => router.push(`/planifier?action=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
+                  className="flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20"
+                >
+                  <CheckSquare className="h-3 w-3" /> Action (M)
+                </button>
+                <button onClick={() => handleDelete(item.id)} className="p-1 text-zinc-600 hover:text-rose-400">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
