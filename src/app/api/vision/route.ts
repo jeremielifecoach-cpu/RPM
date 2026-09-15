@@ -18,11 +18,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur chargement Vision:", error);
-    return NextResponse.json(
-      { error: "Erreur lors du chargement de la vision" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erreur lecture vision" }, { status: 500 });
   }
 }
 
@@ -31,13 +27,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const domainId = body.id || crypto.randomUUID();
 
-    // Sérialiser les champs des 7 Magnifiques dans la description si nécessaire
     const descriptionContent =
       typeof body.details === "object"
         ? JSON.stringify(body.details)
-        : body.description || body.vision || body.mission || "";
+        : body.description || body.vision || "";
 
-    // 1. Sauvegarder ou mettre à jour le domaine de vision
     const existing = await db
       .select()
       .from(lifeVisionDomains)
@@ -59,30 +53,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Mettre à jour les jalons trimestriels
-    if (Array.isArray(body.milestones)) {
-      await db
-        .delete(quarterlyMilestones)
-        .where(eq(quarterlyMilestones.domainId, domainId));
-
-      for (const m of body.milestones) {
-        if (m.targetOutcome?.trim()) {
-          await db.insert(quarterlyMilestones).values({
-            id: crypto.randomUUID(),
-            domainId,
-            quarter: m.quarter || "Q1",
-            targetOutcome: m.targetOutcome.trim(),
-          });
-        }
-      }
-    }
-
     return NextResponse.json({ success: true, id: domainId });
   } catch (error) {
-    console.error("Erreur enregistrement Vision:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la sauvegarde de la vision" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erreur sauvegarde vision" }, { status: 500 });
   }
 }
