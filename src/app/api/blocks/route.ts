@@ -53,7 +53,6 @@ export async function POST(request: Request) {
           content: act.content,
           isMust: act.isMust,
           minutes: act.minutes || 15,
-          owner: act.owner || "Moi",
           completed: false,
         });
       }
@@ -82,7 +81,6 @@ export async function POST(request: Request) {
             content: act.content,
             isMust: Boolean(act.isMust),
             minutes: Number(act.minutes) || 15,
-            owner: act.owner || "Moi",
             completed: false,
           });
         }
