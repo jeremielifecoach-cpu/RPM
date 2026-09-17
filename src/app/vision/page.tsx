@@ -12,7 +12,7 @@ interface DomainVision {
   purpose: string;
   identity: string;
   values: string;
-  beliefs: string;
+  levers: string;
   resources: string;
   strategy: string;
   q1: string;
@@ -72,7 +72,7 @@ export default function VisionPage() {
           purpose: "",
           identity: "",
           values: "",
-          beliefs: "",
+          levers: "",
           resources: "",
           strategy: "",
           q1: "",
@@ -125,7 +125,7 @@ export default function VisionPage() {
             purpose: "",
             identity: "",
             values: "",
-            beliefs: "",
+            levers: "",
             resources: "",
             strategy: "",
             q1: "",
@@ -151,7 +151,6 @@ export default function VisionPage() {
                 </button>
               </div>
 
-              {/* Les 7 Piliers */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs font-bold text-zinc-300">1. Vision Ultime</label>
@@ -170,8 +169,8 @@ export default function VisionPage() {
                   <input value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-300">5. Croyances Aidantes</label>
-                  <input value={data.beliefs} onChange={(e) => handleChange(pillar.id, "beliefs", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <label className="text-xs font-bold text-amber-300">5. Les 3 Leviers d&apos;Action Massifs</label>
+                  <input value={data.levers} onChange={(e) => handleChange(pillar.id, "levers", e.target.value)} placeholder="Ex: Routine matin, Ritualisation, Focus 90m" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">6. Ressources Nécessaires</label>
@@ -183,25 +182,24 @@ export default function VisionPage() {
                 </div>
               </div>
 
-              {/* Les 4 Trimestres (Q1 - Q4) */}
               <div className="border-t border-white/10 pt-4 space-y-3">
                 <h3 className="text-xs font-bold text-amber-300 uppercase">Plan d&apos;étapes Trimestrielles (4 Q)</h3>
                 <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q1 (Jan - Mar)</span>
-                    <input value={data.q1} onChange={(e) => handleChange(pillar.id, "q1", e.target.value)} placeholder="Objectif Q1" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <input value={data.q1} onChange={(e) => handleChange(pillar.id, "q1", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q2 (Avr - Juin)</span>
-                    <input value={data.q2} onChange={(e) => handleChange(pillar.id, "q2", e.target.value)} placeholder="Objectif Q2" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <input value={data.q2} onChange={(e) => handleChange(pillar.id, "q2", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q3 (Juil - Sept)</span>
-                    <input value={data.q3} onChange={(e) => handleChange(pillar.id, "q3", e.target.value)} placeholder="Objectif Q3" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <input value={data.q3} onChange={(e) => handleChange(pillar.id, "q3", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q4 (Oct - Déc)</span>
-                    <input value={data.q4} onChange={(e) => handleChange(pillar.id, "q4", e.target.value)} placeholder="Objectif Q4" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <input value={data.q4} onChange={(e) => handleChange(pillar.id, "q4", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
                   </div>
                 </div>
               </div>
