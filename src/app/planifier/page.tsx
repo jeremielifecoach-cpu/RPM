@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Target, Flame, Clock, Plus, Calendar, CalendarDays, Copy, ArrowRightCircle } from "lucide-react";
+import { ArrowLeft, Target, Flame, Clock, Plus, Calendar, CalendarDays, Copy, ArrowRightCircle, Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,8 @@ function PlanifierContent() {
   const [result, setResult] = useState(searchParams.get("result") || "");
   const [purpose, setPurpose] = useState(searchParams.get("purpose") || "");
   const [selectedAreaId, setSelectedAreaId] = useState("");
-  const [weekStart, setWeekStart] = useState("current");
+  const [targetBlockId, setTargetBlockId] = useState(searchParams.get("targetBlockId") || "");
+  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split("T")[0]);
   const [actionsList, setActionsList] = useState<ActionInput[]>([
     { content: searchParams.get("action") || "", isMust: false, minutes: 15, day: "Lundi" },
   ]);
@@ -49,17 +50,17 @@ function PlanifierContent() {
     setActionsList((prev) => prev.map((item, i) => (i === index ? { ...item, ...fields } : item)));
   }
 
-  async function handleCreateBlock(e: React.FormEvent) {
+  async function handleCreateOrAppend(e: React.FormEvent) {
     e.preventDefault();
-    if (!result.trim()) return;
 
     const res = await fetch("/api/blocks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        targetBlockId: targetBlockId || undefined,
         result,
         purpose,
-        weekStart,
+        weekStart: scheduledDate,
         areaId: selectedAreaId || null,
         actionsList: actionsList.filter((a) => a.content.trim()),
       }),
@@ -68,8 +69,18 @@ function PlanifierContent() {
     if (res.ok) {
       setResult("");
       setPurpose("");
+      setTargetBlockId("");
       setActionsList([{ content: "", isMust: false, minutes: 15, day: "Lundi" }]);
       loadData();
+    }
+  }
+
+  async function handleDeleteBlock(blockId: string) {
+    try {
+      const res = await fetch(`/api/blocks/${blockId}`, { method: "DELETE" });
+      if (res.ok) setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -94,55 +105,64 @@ function PlanifierContent() {
         </h1>
       </div>
 
-      <form onSubmit={handleCreateBlock} className="space-y-5 rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-bold text-amber-300 uppercase">1. Résultat Visé (R)</label>
-            <input
-              value={result}
-              onChange={(e) => setResult(e.target.value)}
-              placeholder="Ex: Lancer la campagne marketing"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
-            />
+      <form onSubmit={handleCreateOrAppend} className="space-y-5 rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl">
+        {targetBlockId && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs font-bold text-amber-300 flex items-center justify-between">
+            <span>Rattachement à un bloc RPM existant sélectionné</span>
+            <button type="button" onClick={() => setTargetBlockId("")} className="underline">Créer un nouveau bloc à la place</button>
           </div>
+        )}
 
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-bold text-amber-300 uppercase">2. Raison d&apos;être / Pourquoi (P)</label>
-            <textarea
-              rows={2}
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              placeholder="Pourquoi est-ce vital ?"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
-            />
-          </div>
+        {!targetBlockId && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-amber-300 uppercase">1. Résultat Visé (R)</label>
+              <input
+                value={result}
+                onChange={(e) => setResult(e.target.value)}
+                placeholder="Ex: Lancer ma nouvelle offre"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-400">Affecter à une Semaine</label>
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-zinc-200">
-              <Calendar className="h-4 w-4 text-amber-400" />
-              <select value={weekStart} onChange={(e) => setWeekStart(e.target.value)} className="bg-transparent outline-none w-full cursor-pointer">
-                <option value="current" className="bg-zinc-900">Semaine en cours (S0)</option>
-                <option value="next" className="bg-zinc-900">Semaine prochaine (S+1)</option>
-                <option value="week+2" className="bg-zinc-900">Dans 2 semaines (S+2)</option>
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-amber-300 uppercase">2. Raison d&apos;être / Pourquoi (P)</label>
+              <textarea
+                rows={2}
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="Pourquoi est-ce crucial ?"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-400">Date / Semaine cible (Calendrier)</label>
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-zinc-200">
+                <Calendar className="h-4 w-4 text-amber-400" />
+                <input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer w-full"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-400">Domaine de Vie</label>
+              <select value={selectedAreaId} onChange={(e) => setSelectedAreaId(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2.5 text-xs text-zinc-200 outline-none">
+                <option value="">Sélectionner un domaine</option>
+                {areas.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
               </select>
             </div>
           </div>
+        )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-400">Domaine de Vie</label>
-            <select value={selectedAreaId} onChange={(e) => setSelectedAreaId(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2.5 text-xs text-zinc-200 outline-none">
-              <option value="">Sélectionner un domaine</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Actions Massives avec Jour */}
         <div className="space-y-3 border-t border-white/10 pt-3">
-          <label className="text-xs font-bold text-amber-300 uppercase block">3. Actions Massives (M) & Calendrier</label>
+          <label className="text-xs font-bold text-amber-300 uppercase block">Actions Massives (M)</label>
 
           {actionsList.map((act, index) => (
             <div key={index} className="flex flex-wrap items-center gap-2">
@@ -153,7 +173,6 @@ function PlanifierContent() {
                 className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none"
               />
 
-              {/* Choix du Jour */}
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
                 <CalendarDays className="h-3.5 w-3.5 text-amber-400" />
                 <select value={act.day} onChange={(e) => updateActionRow(index, { day: e.target.value })} className="bg-transparent outline-none cursor-pointer">
@@ -163,7 +182,6 @@ function PlanifierContent() {
                 </select>
               </div>
 
-              {/* Timing */}
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
                 <select value={act.minutes} onChange={(e) => updateActionRow(index, { minutes: Number(e.target.value) })} className="bg-transparent outline-none cursor-pointer">
@@ -192,12 +210,11 @@ function PlanifierContent() {
           </button>
         </div>
 
-        <button type="submit" disabled={!result.trim()} className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-black hover:bg-amber-400">
-          Créer ce bloc RPM
+        <button type="submit" className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-black hover:bg-amber-400">
+          {targetBlockId ? "Ajouter l'action au bloc existant" : "Créer le bloc RPM"}
         </button>
       </form>
 
-      {/* Affichage des Blocs avec leurs jours et semaines */}
       <div className="space-y-4">
         <h2 className="text-sm font-bold text-zinc-300 uppercase">Blocs RPM en cours ({blocks.length})</h2>
         {blocks.map((b) => (
@@ -206,20 +223,25 @@ function PlanifierContent() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold text-amber-400 uppercase">Résultat</span>
-                  <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
-                    {b.weekStart === "next" ? "Semaine Prochaine" : "Semaine en cours"}
-                  </span>
+                  {b.weekStart && (
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
+                      📅 {b.weekStart}
+                    </span>
+                  )}
                 </div>
                 <h3 className="text-base font-bold text-zinc-100">{b.result}</h3>
                 {b.purpose && <p className="text-xs italic text-zinc-400">&laquo; {b.purpose} &raquo;</p>}
               </div>
 
               <div className="flex items-center gap-2">
-                <button onClick={() => handleBlockAction(b.id, "duplicate")} className="flex items-center gap-1 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:text-amber-300">
-                  <Copy className="h-3.5 w-3.5" /> Dupliquer
+                <button onClick={() => handleBlockAction(b.id, "duplicate")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Dupliquer">
+                  <Copy className="h-4 w-4" />
                 </button>
-                <button onClick={() => handleBlockAction(b.id, "carryOver")} className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/20">
-                  <ArrowRightCircle className="h-3.5 w-3.5" /> Report S+1
+                <button onClick={() => handleBlockAction(b.id, "carryOver")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Report S+1">
+                  <ArrowRightCircle className="h-4 w-4" />
+                </button>
+                <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer le bloc">
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -232,7 +254,6 @@ function PlanifierContent() {
                     <span>{act.content}</span>
                   </div>
                   <div className="flex items-center gap-3 text-zinc-500 text-[11px]">
-                    <span className="text-amber-300/80 font-semibold">📅 {act.owner || "Lundi"}</span>
                     {act.minutes && <span>⏱️ {act.minutes}m</span>}
                   </div>
                 </div>
