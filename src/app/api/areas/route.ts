@@ -26,7 +26,6 @@ export async function POST(request: Request) {
         name: body.name,
         focus: body.focus || "",
         score: Number(body.score) || 5,
-        isPriority: Boolean(body.isPriority),
       })
       .returning();
     return NextResponse.json(newArea[0]);
