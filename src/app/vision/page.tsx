@@ -7,6 +7,7 @@ import { ArrowLeft, Eye, Save, CheckCircle } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 interface DomainVision {
+  title?: string;
   vision: string;
   purpose: string;
   identity: string;
@@ -14,16 +15,20 @@ interface DomainVision {
   beliefs: string;
   resources: string;
   strategy: string;
+  q1: string;
+  q2: string;
+  q3: string;
+  q4: string;
 }
 
-const SEVEN_MAGNIFICENT = [
-  { id: "sante-vitalite", name: "1. Santé & Vitalité Physique", example: "Énergie débordante, corps fort et esprit clair." },
-  { id: "mental-emotions", name: "2. Maîtrise Mentale & Émotionnelle", example: "Sérénité absolue face aux défis, clarté décisionnelle." },
-  { id: "relations-amour", name: "3. Relations & Amour", example: "Connexions profondes, amour inconditionnel et partage." },
-  { id: "carriere-mission", name: "4. Carrière & Mission de Vie", example: "Impact majeur, leadership inspirant et épanouissement." },
-  { id: "finances-liberte", name: "5. Finances & Indépendance", example: "Abondance, sécurité et liberté financière totale." },
-  { id: "contribution-don", name: "6. Contribution & Transmission", example: "Aider les autres, transmettre ses connaissances." },
-  { id: "spiritualite-sens", name: "7. Spiritualité & Sens Ultime", example: "Alignement profond avec ses valeurs suprêmes." },
+const DEFAULT_DOMAINS = [
+  { id: "sante-vitalite", name: "1. Santé & Vitalité Physique" },
+  { id: "mental-emotions", name: "2. Maîtrise Mentale & Émotionnelle" },
+  { id: "relations-amour", name: "3. Relations & Amour" },
+  { id: "carriere-mission", name: "4. Carrière & Mission de Vie" },
+  { id: "finances-liberte", name: "5. Finances & Indépendance" },
+  { id: "contribution-don", name: "6. Contribution & Transmission" },
+  { id: "spiritualite-sens", name: "7. Spiritualité & Sens Ultime" },
 ];
 
 export default function VisionPage() {
@@ -61,19 +66,35 @@ export default function VisionPage() {
     setVisionData((prev) => ({
       ...prev,
       [domainId]: {
-        ...(prev[domainId] || { vision: "", purpose: "", identity: "", values: "", beliefs: "", resources: "", strategy: "" }),
+        ...(prev[domainId] || {
+          title: "",
+          vision: "",
+          purpose: "",
+          identity: "",
+          values: "",
+          beliefs: "",
+          resources: "",
+          strategy: "",
+          q1: "",
+          q2: "",
+          q3: "",
+          q4: "",
+        }),
         [field]: value,
       },
     }));
   }
 
-  async function handleSave(domainId: string, title: string) {
+  async function handleSave(domainId: string, defaultName: string) {
     setSavingId(domainId);
+    const domainObj = visionData[domainId] || {};
+    const finalTitle = domainObj.title?.trim() || defaultName;
+
     try {
       await fetch("/api/vision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: domainId, title, details: visionData[domainId] || {} }),
+        body: JSON.stringify({ id: domainId, title: finalTitle, details: domainObj }),
       });
       setTimeout(() => setSavingId(null), 1200);
     } catch (err) {
@@ -94,59 +115,94 @@ export default function VisionPage() {
           <Eye className="h-7 w-7 text-amber-400" />
           Vision des <span className="italic text-amber-300">7 Magnifiques</span>
         </h1>
-        <p className="mt-1 text-xs text-zinc-400">
-          Le plan maître complet de ta vie sur les 7 piliers fondamentaux.
-        </p>
       </div>
 
       <div className="space-y-8">
-        {SEVEN_MAGNIFICENT.map((pillar) => {
-          const data = visionData[pillar.id] || { vision: "", purpose: "", identity: "", values: "", beliefs: "", resources: "", strategy: "" };
+        {DEFAULT_DOMAINS.map((pillar) => {
+          const data = visionData[pillar.id] || {
+            title: pillar.name,
+            vision: "",
+            purpose: "",
+            identity: "",
+            values: "",
+            beliefs: "",
+            resources: "",
+            strategy: "",
+            q1: "",
+            q2: "",
+            q3: "",
+            q4: "",
+          };
 
           return (
-            <div key={pillar.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
+            <div key={pillar.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-5">
               <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-3 gap-2">
-                <div>
-                  <h2 className="text-lg font-bold text-amber-400">{pillar.name}</h2>
-                  <p className="text-xs text-zinc-500 italic">Exemple : « {pillar.example} »</p>
-                </div>
+                <input
+                  value={data.title ?? pillar.name}
+                  onChange={(e) => handleChange(pillar.id, "title", e.target.value)}
+                  className="bg-transparent text-lg font-bold text-amber-400 outline-none w-full max-w-md focus:border-b focus:border-amber-400"
+                />
                 <button
                   onClick={() => handleSave(pillar.id, pillar.name)}
                   className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500 hover:text-black"
                 >
                   {savingId === pillar.id ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                  {savingId === pillar.id ? "Enregistré" : "Sauvegarder ce pilier"}
+                  {savingId === pillar.id ? "Enregistré" : "Sauvegarder"}
                 </button>
               </div>
 
+              {/* Les 7 Piliers */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
-                  <label className="text-xs font-bold text-zinc-300">1. Vision Ultime (Que veux-tu exactement ?)</label>
-                  <textarea rows={2} value={data.vision} onChange={(e) => handleChange(pillar.id, "vision", e.target.value)} placeholder="Description précise de l'état idéal..." className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <label className="text-xs font-bold text-zinc-300">1. Vision Ultime</label>
+                  <textarea rows={2} value={data.vision} onChange={(e) => handleChange(pillar.id, "vision", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1 md:col-span-2">
-                  <label className="text-xs font-bold text-zinc-300">2. Raison d&apos;être / Pourquoi (Pourquoi est-ce vital ?)</label>
-                  <textarea rows={2} value={data.purpose} onChange={(e) => handleChange(pillar.id, "purpose", e.target.value)} placeholder="Leviers émotionnels profonds..." className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <label className="text-xs font-bold text-zinc-300">2. Raison d&apos;être / Pourquoi</label>
+                  <textarea rows={2} value={data.purpose} onChange={(e) => handleChange(pillar.id, "purpose", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-300">3. Rôle & Identité (Qui dois-je être ?)</label>
-                  <input value={data.identity} onChange={(e) => handleChange(pillar.id, "identity", e.target.value)} placeholder="Ex: Athlète discipliné" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <label className="text-xs font-bold text-zinc-300">3. Rôle & Identité</label>
+                  <input value={data.identity} onChange={(e) => handleChange(pillar.id, "identity", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">4. Valeurs Clés</label>
-                  <input value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} placeholder="Ex: Énergie, Respect, Excellence" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <input value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">5. Croyances Aidantes</label>
-                  <input value={data.beliefs} onChange={(e) => handleChange(pillar.id, "beliefs", e.target.value)} placeholder="Ex: Mon corps se régénère chaque jour" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <input value={data.beliefs} onChange={(e) => handleChange(pillar.id, "beliefs", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">6. Ressources Nécessaires</label>
-                  <input value={data.resources} onChange={(e) => handleChange(pillar.id, "resources", e.target.value)} placeholder="Ex: Coach, nutrition, 8h de sommeil" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <input value={data.resources} onChange={(e) => handleChange(pillar.id, "resources", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs font-bold text-zinc-300">7. Stratégies Clés & Objectif à 1 an</label>
-                  <textarea rows={2} value={data.strategy} onChange={(e) => handleChange(pillar.id, "strategy", e.target.value)} placeholder="Actions stratégiques incontournables..." className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={2} value={data.strategy} onChange={(e) => handleChange(pillar.id, "strategy", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+              </div>
+
+              {/* Les 4 Trimestres (Q1 - Q4) */}
+              <div className="border-t border-white/10 pt-4 space-y-3">
+                <h3 className="text-xs font-bold text-amber-300 uppercase">Plan d&apos;étapes Trimestrielles (4 Q)</h3>
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400">Q1 (Jan - Mar)</span>
+                    <input value={data.q1} onChange={(e) => handleChange(pillar.id, "q1", e.target.value)} placeholder="Objectif Q1" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400">Q2 (Avr - Juin)</span>
+                    <input value={data.q2} onChange={(e) => handleChange(pillar.id, "q2", e.target.value)} placeholder="Objectif Q2" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400">Q3 (Juil - Sept)</span>
+                    <input value={data.q3} onChange={(e) => handleChange(pillar.id, "q3", e.target.value)} placeholder="Objectif Q3" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400">Q4 (Oct - Déc)</span>
+                    <input value={data.q4} onChange={(e) => handleChange(pillar.id, "q4", e.target.value)} placeholder="Objectif Q4" className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                  </div>
                 </div>
               </div>
             </div>
