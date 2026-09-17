@@ -2,32 +2,54 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Star, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, Save, CheckCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-interface AreaItem {
-  id: string;
-  name: string;
-  focus: string | null;
-  score: number | null;
-  isPriority?: boolean | null;
+interface DomainVision {
+  vision: string;
+  purpose: string;
+  identity: string;
+  values: string;
+  beliefs: string;
+  resources: string;
+  strategy: string;
 }
 
-export default function DomainesPage() {
-  const [areasList, setAreasList] = useState<AreaItem[]>([]);
-  const [name, setName] = useState("");
-  const [focus, setFocus] = useState("");
+const SEVEN_MAGNIFICENT = [
+  { id: "sante-vitalite", name: "1. Santé & Vitalité Physique", example: "Énergie débordante, corps fort et esprit clair." },
+  { id: "mental-emotions", name: "2. Maîtrise Mentale & Émotionnelle", example: "Sérénité absolue face aux défis, clarté décisionnelle." },
+  { id: "relations-amour", name: "3. Relations & Amour", example: "Connexions profondes, amour inconditionnel et partage." },
+  { id: "carriere-mission", name: "4. Carrière & Mission de Vie", example: "Impact majeur, leadership inspirant et épanouissement." },
+  { id: "finances-liberte", name: "5. Finances & Indépendance", example: "Abondance, sécurité et liberté financière totale." },
+  { id: "contribution-don", name: "6. Contribution & Transmission", example: "Aider les autres, transmettre ses connaissances." },
+  { id: "spiritualite-sens", name: "7. Spiritualité & Sens Ultime", example: "Alignement profond avec ses valeurs suprêmes." },
+];
+
+export default function VisionPage() {
+  const [visionData, setVisionData] = useState<Record<string, DomainVision>>({});
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAreas();
+    loadVisionData();
   }, []);
 
-  async function loadAreas() {
+  async function loadVisionData() {
     try {
-      const res = await fetch("/api/areas", { cache: "no-store" });
-      if (res.ok) setAreasList(await res.json());
+      const res = await fetch("/api/vision", { cache: "no-store" });
+      if (res.ok) {
+        const raw = await res.json();
+        const loaded: Record<string, DomainVision> = {};
+        raw.forEach((item: any) => {
+          try {
+            if (item.description && item.description.startsWith("{")) {
+              loaded[item.id] = JSON.parse(item.description);
+            }
+          } catch {}
+        });
+        setVisionData(loaded);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -35,48 +57,32 @@ export default function DomainesPage() {
     }
   }
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
+  function handleChange(domainId: string, field: keyof DomainVision, value: string) {
+    setVisionData((prev) => ({
+      ...prev,
+      [domainId]: {
+        ...(prev[domainId] || { vision: "", purpose: "", identity: "", values: "", beliefs: "", resources: "", strategy: "" }),
+        [field]: value,
+      },
+    }));
+  }
+
+  async function handleSave(domainId: string, title: string) {
+    setSavingId(domainId);
     try {
-      const res = await fetch("/api/areas", {
+      await fetch("/api/vision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), focus: focus.trim(), score: 5 }),
+        body: JSON.stringify({ id: domainId, title, details: visionData[domainId] || {} }),
       });
-      if (res.ok) {
-        setName("");
-        setFocus("");
-        loadAreas();
-      }
+      setTimeout(() => setSavingId(null), 1200);
     } catch (err) {
       console.error(err);
+      setSavingId(null);
     }
   }
 
-  async function updateArea(id: string, updates: Partial<AreaItem>) {
-    try {
-      const res = await fetch(`/api/areas/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-      if (res.ok) {
-        setAreasList((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    try {
-      const res = await fetch(`/api/areas/${id}`, { method: "DELETE" });
-      if (res.ok) setAreasList((prev) => prev.filter((a) => a.id !== id));
-    } catch (err) {
-      console.error(err);
-    }
-  }
+  if (loading) return <div className="p-8 text-center text-xs text-zinc-500">Chargement de la Vision...</div>;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
@@ -84,79 +90,69 @@ export default function DomainesPage() {
         <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-amber-300">
           <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
         </Link>
-        <h1 className="mt-2 font-display text-3xl font-bold text-zinc-100">
-          Domaines de <span className="italic text-amber-300">Vie</span>
+        <h1 className="mt-2 font-display text-3xl font-bold text-zinc-100 flex items-center gap-2">
+          <Eye className="h-7 w-7 text-amber-400" />
+          Vision des <span className="italic text-amber-300">7 Magnifiques</span>
         </h1>
+        <p className="mt-1 text-xs text-zinc-400">
+          Le plan maître complet de ta vie sur les 7 piliers fondamentaux.
+        </p>
       </div>
 
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-3 rounded-2xl border border-white/10 bg-[#0d0d10] p-4 shadow-xl">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nouveau Domaine (ex: Santé, Carrière...)"
-          className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none"
-        />
-        <input
-          value={focus}
-          onChange={(e) => setFocus(e.target.value)}
-          placeholder="Intention / Focus"
-          className="min-w-[180px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none"
-        />
-        <button type="submit" disabled={!name.trim()} className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-black hover:bg-amber-400">
-          <Plus className="h-4 w-4 inline mr-1" /> Ajouter
-        </button>
-      </form>
+      <div className="space-y-8">
+        {SEVEN_MAGNIFICENT.map((pillar) => {
+          const data = visionData[pillar.id] || { vision: "", purpose: "", identity: "", values: "", beliefs: "", resources: "", strategy: "" };
 
-      {loading ? (
-        <div className="p-8 text-center text-xs text-zinc-500">Chargement des domaines...</div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {areasList.map((area) => {
-            const currentScore = area.score ?? 5;
-            const isPriority = area.isPriority ?? false;
-
-            return (
-              <div key={area.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 space-y-4 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-zinc-100">{area.name}</h3>
-                    {area.focus && <p className="text-xs text-zinc-500">{area.focus}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateArea(area.id, { isPriority: !isPriority })}
-                      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold ${
-                        isPriority ? "border-amber-400/50 bg-amber-400/15 text-amber-300" : "border-white/10 text-zinc-500 hover:text-zinc-300"
-                      }`}
-                    >
-                      <Star className={`h-3.5 w-3.5 ${isPriority ? "fill-amber-300" : ""}`} />
-                      {isPriority ? "Prioritaire" : "Prioriser"}
-                    </button>
-                    <button onClick={() => handleDelete(area.id)} className="p-1 text-zinc-600 hover:text-rose-400">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+          return (
+            <div key={pillar.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-3 gap-2">
+                <div>
+                  <h2 className="text-lg font-bold text-amber-400">{pillar.name}</h2>
+                  <p className="text-xs text-zinc-500 italic">Exemple : « {pillar.example} »</p>
                 </div>
+                <button
+                  onClick={() => handleSave(pillar.id, pillar.name)}
+                  className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500 hover:text-black"
+                >
+                  {savingId === pillar.id ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                  {savingId === pillar.id ? "Enregistré" : "Sauvegarder ce pilier"}
+                </button>
+              </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-zinc-400">Satisfaction :</span>
-                    <span className="text-amber-400 font-bold">{currentScore}/10</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1" max="10"
-                    value={currentScore}
-                    onChange={(e) => setAreasList((prev) => prev.map((a) => (a.id === area.id ? { ...a, score: Number(e.target.value) } : a)))}
-                    onMouseUp={(e) => updateArea(area.id, { score: Number((e.target as HTMLInputElement).value) })}
-                    className="w-full accent-amber-400 bg-zinc-800"
-                  />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs font-bold text-zinc-300">1. Vision Ultime (Que veux-tu exactement ?)</label>
+                  <textarea rows={2} value={data.vision} onChange={(e) => handleChange(pillar.id, "vision", e.target.value)} placeholder="Description précise de l'état idéal..." className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs font-bold text-zinc-300">2. Raison d&apos;être / Pourquoi (Pourquoi est-ce vital ?)</label>
+                  <textarea rows={2} value={data.purpose} onChange={(e) => handleChange(pillar.id, "purpose", e.target.value)} placeholder="Leviers émotionnels profonds..." className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-300">3. Rôle & Identité (Qui dois-je être ?)</label>
+                  <input value={data.identity} onChange={(e) => handleChange(pillar.id, "identity", e.target.value)} placeholder="Ex: Athlète discipliné" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-300">4. Valeurs Clés</label>
+                  <input value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} placeholder="Ex: Énergie, Respect, Excellence" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-300">5. Croyances Aidantes</label>
+                  <input value={data.beliefs} onChange={(e) => handleChange(pillar.id, "beliefs", e.target.value)} placeholder="Ex: Mon corps se régénère chaque jour" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-300">6. Ressources Nécessaires</label>
+                  <input value={data.resources} onChange={(e) => handleChange(pillar.id, "resources", e.target.value)} placeholder="Ex: Coach, nutrition, 8h de sommeil" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs font-bold text-zinc-300">7. Stratégies Clés & Objectif à 1 an</label>
+                  <textarea rows={2} value={data.strategy} onChange={(e) => handleChange(pillar.id, "strategy", e.target.value)} placeholder="Actions stratégiques incontournables..." className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
