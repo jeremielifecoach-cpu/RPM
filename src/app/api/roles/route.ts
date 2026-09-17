@@ -1,26 +1,40 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { roles } from "@/db/schema";
-import { getRoles } from "@/lib/data";
+import { eq } from "drizzle-orm";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {
-    const data = await getRoles();
+    const data = await db.select().from(roles);
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Erreur rôles" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur chargement rôles" }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { name, description } = await request.json();
-    const created = await db
-      .insert(roles)
-      .values({ id: crypto.randomUUID(), name, description })
-      .returning();
+    const body = await req.json();
+    const roleId = body.id || crypto.randomUUID();
+
+    const payload = {
+      name: body.name || "Nouveau Rôle",
+      description: typeof body.details === "object" ? JSON.stringify(body.details) : body.description || "",
+    };
+
+    const existing = await db.select().from(roles).where(eq(roles.id, roleId));
+
+    if (existing.length > 0) {
+      await db.update(roles).set(payload).where(eq(roles.id, roleId));
+      return NextResponse.json({ success: true, id: roleId });
+    }
+
+    const created = await db.insert(roles).values({ id: roleId, ...payload }).returning();
     return NextResponse.json(created[0]);
   } catch (error) {
-    return NextResponse.json({ error: "Erreur création rôle" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur sauvegarde rôle" }, { status: 500 });
   }
 }
