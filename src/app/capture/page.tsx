@@ -3,30 +3,30 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Inbox, Plus, Trash2, Target, HelpCircle, CheckSquare } from "lucide-react";
+import { ArrowLeft, Inbox, Plus, Trash2, Target, HelpCircle, CheckSquare, Layers } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-interface CaptureItem {
-  id: string;
-  content: string;
-  createdAt: string;
-}
-
 export default function CapturePage() {
-  const [captures, setCaptures] = useState<CaptureItem[]>([]);
+  const [captures, setCaptures] = useState<any[]>([]);
+  const [existingBlocks, setExistingBlocks] = useState<any[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<Record<string, string>>({});
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    loadCaptures();
+    loadData();
   }, []);
 
-  async function loadCaptures() {
+  async function loadData() {
     try {
-      const res = await fetch("/api/captures", { cache: "no-store" });
-      if (res.ok) setCaptures(await res.json());
+      const [resC, resB] = await Promise.all([
+        fetch("/api/captures", { cache: "no-store" }),
+        fetch("/api/blocks", { cache: "no-store" }),
+      ]);
+      if (resC.ok) setCaptures(await resC.json());
+      if (resB.ok) setExistingBlocks(await resB.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -46,7 +46,7 @@ export default function CapturePage() {
       });
       if (res.ok) {
         setContent("");
-        loadCaptures();
+        loadData();
       }
     } catch (err) {
       console.error(err);
@@ -59,6 +59,17 @@ export default function CapturePage() {
       if (res.ok) setCaptures((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  function handleConvert(capture: any, mode: "R" | "P" | "M") {
+    const targetBlockId = selectedBlockId[capture.id];
+    const paramKey = mode === "R" ? "result" : mode === "P" ? "purpose" : "action";
+
+    if (targetBlockId) {
+      router.push(`/planifier?${paramKey}=${encodeURIComponent(capture.content)}&targetBlockId=${targetBlockId}&captureId=${capture.id}`);
+    } else {
+      router.push(`/planifier?${paramKey}=${encodeURIComponent(capture.content)}&captureId=${capture.id}`);
     }
   }
 
@@ -79,7 +90,7 @@ export default function CapturePage() {
           rows={3}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Qu'as-tu en tête ?"
+          placeholder="Note ta pensée..."
           className="w-full rounded-xl border border-white/10 bg-black/40 p-3.5 text-sm text-zinc-100 outline-none"
         />
         <div className="flex justify-end">
@@ -89,40 +100,57 @@ export default function CapturePage() {
         </div>
       </form>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <h2 className="text-xs font-bold text-zinc-400 uppercase">Boîte de réception ({captures.length})</h2>
-        {loading ? (
-          <div className="p-6 text-center text-xs text-zinc-500">Chargement...</div>
-        ) : (
-          captures.map((item) => (
-            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0d0d10] p-4 text-sm">
-              <span className="flex-1 font-medium text-zinc-200">{item.content}</span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  onClick={() => router.push(`/planifier?result=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
-                  className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20"
+        {captures.map((item) => (
+          <div key={item.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-zinc-200 text-sm">{item.content}</span>
+              <button onClick={() => handleDelete(item.id)} className="p-1 text-zinc-600 hover:text-rose-400">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+              <div className="flex items-center gap-1.5 bg-black/50 border border-white/10 rounded-xl px-2.5 py-1">
+                <Layers className="h-3.5 w-3.5 text-amber-400" />
+                <select
+                  value={selectedBlockId[item.id] || ""}
+                  onChange={(e) => setSelectedBlockId((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                  className="bg-transparent text-xs text-zinc-300 outline-none"
                 >
-                  <Target className="h-3 w-3" /> Résultat (R)
+                  <option value="">➕ Nouveau bloc RPM</option>
+                  {existingBlocks.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      📌 {b.result.slice(0, 30)}...
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 ml-auto">
+                <button
+                  onClick={() => handleConvert(item, "R")}
+                  className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20"
+                >
+                  <Target className="h-3.5 w-3.5" /> Résultat (R)
                 </button>
                 <button
-                  onClick={() => router.push(`/planifier?purpose=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
-                  className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/20"
+                  onClick={() => handleConvert(item, "P")}
+                  className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
                 >
-                  <HelpCircle className="h-3 w-3" /> Pourquoi (P)
+                  <HelpCircle className="h-3.5 w-3.5" /> Pourquoi (P)
                 </button>
                 <button
-                  onClick={() => router.push(`/planifier?action=${encodeURIComponent(item.content)}&captureId=${item.id}`)}
-                  className="flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20"
+                  onClick={() => handleConvert(item, "M")}
+                  className="flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-xs font-bold text-sky-300 hover:bg-sky-500/20"
                 >
-                  <CheckSquare className="h-3 w-3" /> Action (M)
-                </button>
-                <button onClick={() => handleDelete(item.id)} className="p-1 text-zinc-600 hover:text-rose-400">
-                  <Trash2 className="h-4 w-4" />
+                  <CheckSquare className="h-3.5 w-3.5" /> Action (M)
                 </button>
               </div>
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
     </div>
   );
