@@ -59,18 +59,18 @@ export async function POST(request: Request) {
       return NextResponse.json(cloned);
     }
 
-    const blockId = crypto.randomUUID();
-    const [newBlock] = await db
-      .insert(rpmBlocks)
-      .values({
+    const blockId = body.targetBlockId || crypto.randomUUID();
+
+    if (!body.targetBlockId) {
+      await db.insert(rpmBlocks).values({
         id: blockId,
         areaId: body.areaId || null,
         result: body.result,
         purpose: body.purpose || "",
         weekStart: body.weekStart || "current",
         status: "active",
-      })
-      .returning();
+      });
+    }
 
     if (body.actionsList && Array.isArray(body.actionsList)) {
       for (const act of body.actionsList) {
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json(newBlock);
+    return NextResponse.json({ success: true, blockId });
   } catch (error) {
     console.error("Erreur création bloc RPM :", error);
     return NextResponse.json({ error: "Erreur création bloc" }, { status: 500 });
