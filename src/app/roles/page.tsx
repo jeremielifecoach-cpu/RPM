@@ -53,7 +53,7 @@ export default function RolesPage() {
   function handleAddRole() {
     const newRole: RoleItem = {
       id: crypto.randomUUID(),
-      name: "Nouveau Rôle (ex: Leader, Parent, Athlète)",
+      name: "Nouveau Rôle (ex : Leader, Parent, Athlète)",
       details: { identity: "", purpose: "", keyResult: "" },
     };
     setRolesList((prev) => [newRole, ...prev]);
@@ -84,7 +84,7 @@ export default function RolesPage() {
     }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDeleteRole(id: string) {
     try {
       const res = await fetch(`/api/roles/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -109,7 +109,7 @@ export default function RolesPage() {
             Rôles & <span className="italic text-amber-300">Identités</span>
           </h1>
           <p className="mt-1 text-xs text-zinc-400">
-            Définis qui tu dois être pour accomplir tes résultats sans forcer.
+            Définit qui tu dois être pour accomplir tes résultats sans forcer.
           </p>
         </div>
         <button onClick={handleAddRole} className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-black hover:bg-amber-400">
@@ -120,7 +120,7 @@ export default function RolesPage() {
       <div className="space-y-6">
         {rolesList.map((role) => (
           <div key={role.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
               <input
                 value={role.name}
                 onChange={(e) => updateRoleField(role.id, "name", e.target.value)}
@@ -135,7 +135,7 @@ export default function RolesPage() {
                   {savingId === role.id ? "Enregistré" : "Sauvegarder"}
                 </button>
                 <button
-                  onClick={() => handleDelete(role.id)}
+                  onClick={() => handleDeleteRole(role.id)}
                   className="p-1.5 text-zinc-600 hover:text-rose-400"
                   title="Supprimer ce rôle"
                 >
@@ -152,7 +152,7 @@ export default function RolesPage() {
                   rows={3}
                   value={role.details.identity}
                   onChange={(e) => updateRoleField(role.id, "identity", e.target.value)}
-                  placeholder="Ex: Un guide inspirant, calme et inébranlable."
+                  placeholder="Ex : Un guide inspirant, calme et inébranlable."
                   className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none"
                 />
               </div>
@@ -164,7 +164,7 @@ export default function RolesPage() {
                   rows={3}
                   value={role.details.purpose}
                   onChange={(e) => updateRoleField(role.id, "purpose", e.target.value)}
-                  placeholder="Ex: Pour offrir la meilleure vie à mes proches et transmettre."
+                  placeholder="Ex : Pour offrir la meilleure vie à mes proches et transmettre."
                   className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none"
                 />
               </div>
@@ -176,7 +176,7 @@ export default function RolesPage() {
                   rows={3}
                   value={role.details.keyResult}
                   onChange={(e) => updateRoleField(role.id, "keyResult", e.target.value)}
-                  placeholder="Ex: 100% de présence d'esprit lors des réunions d'équipe."
+                  placeholder="Ex : 100% de présence d'esprit lors des réunions d'équipe."
                   className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none"
                 />
               </div>
