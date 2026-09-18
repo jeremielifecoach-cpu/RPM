@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Shield, Plus, Save, CheckCircle } from "lucide-react";
+import { ArrowLeft, Shield, Plus, Save, CheckCircle, Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +84,17 @@ export default function RolesPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/roles/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setRolesList((prev) => prev.filter((r) => r.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   if (loading) return <div className="p-8 text-center text-xs text-zinc-500">Chargement des rôles...</div>;
 
   return (
@@ -98,7 +109,7 @@ export default function RolesPage() {
             Rôles & <span className="italic text-amber-300">Identités</span>
           </h1>
           <p className="mt-1 text-xs text-zinc-400">
-            Définit qui tu dois être pour accomplir tes résultats sans forcer.
+            Définis qui tu dois être pour accomplir tes résultats sans forcer.
           </p>
         </div>
         <button onClick={handleAddRole} className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-black hover:bg-amber-400">
@@ -109,19 +120,28 @@ export default function RolesPage() {
       <div className="space-y-6">
         {rolesList.map((role) => (
           <div key={role.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-3">
               <input
                 value={role.name}
                 onChange={(e) => updateRoleField(role.id, "name", e.target.value)}
                 className="bg-transparent text-lg font-bold text-amber-400 outline-none w-full"
               />
-              <button
-                onClick={() => handleSave(role)}
-                className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500 hover:text-black"
-              >
-                {savingId === role.id ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                {savingId === role.id ? "Enregistré" : "Sauvegarder"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleSave(role)}
+                  className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500 hover:text-black"
+                >
+                  {savingId === role.id ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                  {savingId === role.id ? "Enregistré" : "Sauvegarder"}
+                </button>
+                <button
+                  onClick={() => handleDelete(role.id)}
+                  className="p-1.5 text-zinc-600 hover:text-rose-400"
+                  title="Supprimer ce rôle"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
