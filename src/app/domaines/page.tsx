@@ -54,16 +54,13 @@ export default function DomainesPage() {
     }
   }
 
-  async function updateArea(id: string, updates: Partial<AreaItem>) {
+  async function updateScore(id: string, newScore: number) {
     try {
-      const res = await fetch(`/api/areas/${id}`, {
+      await fetch(`/api/areas/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({ score: newScore }),
       });
-      if (res.ok) {
-        setAreasList((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
-      }
     } catch (err) {
       console.error(err);
     }
@@ -72,11 +69,15 @@ export default function DomainesPage() {
   async function handleDelete(id: string) {
     try {
       const res = await fetch(`/api/areas/${id}`, { method: "DELETE" });
-      if (res.ok) setAreasList((prev) => prev.filter((a) => a.id !== id));
+      if (res.ok) {
+        setAreasList((prev) => prev.filter((a) => a.id !== id));
+      }
     } catch (err) {
       console.error(err);
     }
   }
+
+  if (loading) return <div className="p-8 text-center text-xs text-zinc-500">Chargement...</div>;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
@@ -93,7 +94,7 @@ export default function DomainesPage() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nouveau Domaine (ex: Santé, Carrière...)"
+          placeholder="Nouveau Domaine"
           className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none"
         />
         <input
@@ -107,56 +108,44 @@ export default function DomainesPage() {
         </button>
       </form>
 
-      {loading ? (
-        <div className="p-8 text-center text-xs text-zinc-500">Chargement des domaines...</div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {areasList.map((area) => {
-            const currentScore = area.score ?? 5;
-            const isPriority = area.isPriority ?? false;
+      <div className="grid gap-4 md:grid-cols-2">
+        {areasList.map((area) => {
+          const currentScore = area.score ?? 5;
 
-            return (
-              <div key={area.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 space-y-4 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-zinc-100">{area.name}</h3>
-                    {area.focus && <p className="text-xs text-zinc-500">{area.focus}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateArea(area.id, { isPriority: !isPriority })}
-                      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold ${
-                        isPriority ? "border-amber-400/50 bg-amber-400/15 text-amber-300" : "border-white/10 text-zinc-500 hover:text-zinc-300"
-                      }`}
-                    >
-                      <Star className={`h-3.5 w-3.5 ${isPriority ? "fill-amber-300" : ""}`} />
-                      {isPriority ? "Prioritaire" : "Prioriser"}
-                    </button>
-                    <button onClick={() => handleDelete(area.id)} className="p-1 text-zinc-600 hover:text-rose-400">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+          return (
+            <div key={area.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-zinc-100">{area.name}</h3>
+                  {area.focus && <p className="text-xs text-zinc-500">{area.focus}</p>}
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-zinc-400">Satisfaction :</span>
-                    <span className="text-amber-400 font-bold">{currentScore}/10</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1" max="10"
-                    value={currentScore}
-                    onChange={(e) => setAreasList((prev) => prev.map((a) => (a.id === area.id ? { ...a, score: Number(e.target.value) } : a)))}
-                    onMouseUp={(e) => updateArea(area.id, { score: Number((e.target as HTMLInputElement).value) })}
-                    className="w-full accent-amber-400 bg-zinc-800"
-                  />
-                </div>
+                <button onClick={() => handleDelete(area.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer ce domaine">
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-zinc-400">Satisfaction :</span>
+                  <span className="text-amber-400 font-bold">{currentScore}/10</span>
+                </div>
+                <input
+                  type="range"
+                  min="1" max="10"
+                  value={currentScore}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setAreasList((prev) => prev.map((a) => (a.id === area.id ? { ...a, score: val } : a)));
+                  }}
+                  onMouseUp={(e) => updateScore(area.id, Number((e.target as HTMLInputElement).value))}
+                  onTouchEnd={(e) => updateScore(area.id, Number((e.target as HTMLInputElement).value))}
+                  className="w-full accent-amber-400 bg-zinc-800 cursor-pointer"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
-}
+                  }
