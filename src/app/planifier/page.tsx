@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Target, Flame, Clock, Plus, Calendar, CalendarDays, Copy, ArrowRightCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Target, Flame, Clock, Plus, Calendar, CalendarDays, Copy, ArrowRightCircle, Trash2, Filter } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,7 @@ function PlanifierContent() {
   const searchParams = useSearchParams();
   const [areas, setAreas] = useState<any[]>([]);
   const [blocks, setBlocks] = useState<any[]>([]);
+  const [filterAreaId, setFilterAreaId] = useState("");
   const [result, setResult] = useState(searchParams.get("result") || "");
   const [purpose, setPurpose] = useState(searchParams.get("purpose") || "");
   const [selectedAreaId, setSelectedAreaId] = useState("");
@@ -93,6 +94,10 @@ function PlanifierContent() {
     if (res.ok) loadData();
   }
 
+  const filteredBlocks = filterAreaId
+    ? blocks.filter((b) => b.areaId === filterAreaId)
+    : blocks;
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
       <div>
@@ -120,7 +125,7 @@ function PlanifierContent() {
               <input
                 value={result}
                 onChange={(e) => setResult(e.target.value)}
-                placeholder="Ex: Lancer ma nouvelle offre"
+                placeholder="Ex : Lancer ma nouvelle offre"
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
               />
             </div>
@@ -215,52 +220,81 @@ function PlanifierContent() {
         </button>
       </form>
 
+      {/* Header avec Filtre par Domaine */}
       <div className="space-y-4">
-        <h2 className="text-sm font-bold text-zinc-300 uppercase">Blocs RPM en cours ({blocks.length})</h2>
-        {blocks.map((b) => (
-          <div key={b.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 space-y-3 shadow-lg">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-amber-400 uppercase">Résultat</span>
-                  {b.weekStart && (
-                    <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
-                      📅 {b.weekStart}
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-base font-bold text-zinc-100">{b.result}</h3>
-                {b.purpose && <p className="text-xs italic text-zinc-400">&laquo; {b.purpose} &raquo;</p>}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button onClick={() => handleBlockAction(b.id, "duplicate")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Dupliquer">
-                  <Copy className="h-4 w-4" />
-                </button>
-                <button onClick={() => handleBlockAction(b.id, "carryOver")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Report S+1">
-                  <ArrowRightCircle className="h-4 w-4" />
-                </button>
-                <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer le bloc">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              {b.actions.map((act: any) => (
-                <div key={act.id} className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-1.5 text-xs text-zinc-200">
-                  <div className="flex items-center gap-2">
-                    {act.isMust && <span className="text-rose-400 font-bold">🔥 MUST</span>}
-                    <span>{act.content}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-zinc-500 text-[11px]">
-                    {act.minutes && <span>⏱️ {act.minutes}m</span>}
-                  </div>
-                </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-zinc-300 uppercase">Blocs RPM en cours ({filteredBlocks.length})</h2>
+          
+          <div className="flex items-center gap-2 bg-[#0d0d10] border border-white/10 rounded-xl px-3 py-1.5 text-xs">
+            <Filter className="h-3.5 w-3.5 text-amber-400" />
+            <select
+              value={filterAreaId}
+              onChange={(e) => setFilterAreaId(e.target.value)}
+              className="bg-transparent text-zinc-200 outline-none cursor-pointer"
+            >
+              <option value="" className="bg-zinc-900">Tous les domaines</option>
+              {areas.map((a) => (
+                <option key={a.id} value={a.id} className="bg-zinc-900">
+                  {a.name}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
-        ))}
+        </div>
+
+        {filteredBlocks.map((b) => {
+          const areaObj = areas.find((a) => a.id === b.areaId);
+
+          return (
+            <div key={b.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-amber-400 uppercase">Résultat</span>
+                    {areaObj && (
+                      <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                        {areaObj.name}
+                      </span>
+                    )}
+                    {b.weekStart && (
+                      <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
+                        📅 {b.weekStart}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-bold text-zinc-100">{b.result}</h3>
+                  {b.purpose && <p className="text-xs italic text-zinc-400">&laquo; {b.purpose} &raquo;</p>}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleBlockAction(b.id, "duplicate")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Dupliquer">
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleBlockAction(b.id, "carryOver")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Report S+1">
+                    <ArrowRightCircle className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer le bloc">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                {b.actions.map((act: any) => (
+                  <div key={act.id} className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-1.5 text-xs text-zinc-200">
+                    <div className="flex items-center gap-2">
+                      {act.isMust && <span className="text-rose-400 font-bold">🔥 MUST</span>}
+                      <span>{act.content}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-zinc-500 text-[11px]">
+                      {act.minutes && <span>⏱️ {act.minutes}m</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
