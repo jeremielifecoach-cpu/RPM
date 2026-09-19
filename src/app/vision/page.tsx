@@ -169,8 +169,8 @@ export default function VisionPage() {
                   <input value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-amber-300">5. Les 3 Leviers d&apos;Action Massifs</label>
-                  <input value={data.levers} onChange={(e) => handleChange(pillar.id, "levers", e.target.value)} placeholder="Ex: Routine matin, Ritualisation, Focus 90m" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <label className="text-xs font-bold text-amber-300">5. Les 3 Leviers d&apos;Action</label>
+                  <input value={data.levers} onChange={(e) => handleChange(pillar.id, "levers", e.target.value)} placeholder="Ex : Routine matinale, Ritualisation, Time-blocking" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">6. Ressources Nécessaires</label>
@@ -210,3 +210,4 @@ export default function VisionPage() {
     </div>
   );
 }
+  
