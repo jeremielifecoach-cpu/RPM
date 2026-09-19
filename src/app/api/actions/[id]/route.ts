@@ -10,6 +10,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await db.update(actions).set(body).where(eq(actions.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Erreur mise à jour action" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur modification action" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    await db.delete(actions).where(eq(actions.id, id));
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: "Erreur suppression action" }, { status: 500 });
   }
 }
