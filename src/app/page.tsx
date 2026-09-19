@@ -25,15 +25,23 @@ export default async function HomePage() {
   const mustActions = mustActionsList.length;
   const mustCompleted = mustActionsList.filter((a) => a.completed).length;
 
+  // Calcul sécurisé du temps restant
   const uncompletedActions = actionsData.filter((a) => !a.completed);
-  const remainingMinutes = uncompletedActions.reduce((acc, a) => acc + (a.minutes || 15), 0);
+  const remainingMinutes = uncompletedActions.reduce((acc, a) => {
+    const mins = typeof a.minutes === "number" ? a.minutes : parseInt(String(a.minutes || 15), 10);
+    return acc + (isNaN(mins) ? 15 : mins);
+  }, 0);
+
   const completionRate = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
+  const hours = Math.floor(remainingMinutes / 60) || 0;
+  const mins = (remainingMinutes % 60) || 0;
 
   const stats = {
     // Blocs actifs
     activeBlocks,
     totalBlocks: activeBlocks,
     activeBlocksCount: activeBlocks,
+    blocksCount: activeBlocks,
 
     // Actions
     totalActions,
@@ -45,17 +53,26 @@ export default async function HomePage() {
     mustCompleted,
     mustDone: mustCompleted,
 
-    // Élan de semaine / Taux
+    // Élan de semaine
+    momentum: completionRate,
+    weeklyMomentum: completionRate,
+    elan: completionRate,
+    elanDeSemaine: completionRate,
     completionRate,
     completionPercentage: completionRate,
-    elan: completionRate,
-    momentum: completionRate,
+    progress: completionRate,
 
-    // Temps restant (évite le NaNhNaN)
+    // Temps restant (élimine NaNhNaN)
     remainingMinutes,
+    remainingTime: remainingMinutes,
+    timeLeft: remainingMinutes,
+    totalMinutes: remainingMinutes,
     totalRemainingMinutes: remainingMinutes,
-    remainingHours: Math.floor(remainingMinutes / 60),
-    remainingMins: remainingMinutes % 60,
+    time: remainingMinutes,
+    remainingHours: hours,
+    remainingMins: mins,
+    hours,
+    minutes: mins,
   };
 
   const now = new Date();
@@ -76,4 +93,4 @@ export default async function HomePage() {
       stats={stats as any}
     />
   );
-      }
+}
