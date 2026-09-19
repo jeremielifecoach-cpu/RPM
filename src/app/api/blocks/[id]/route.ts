@@ -13,3 +13,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: "Erreur suppression bloc" }, { status: 500 });
   }
 }
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    await db.update(rpmBlocks).set(body).where(eq(rpmBlocks.id, id));
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: "Erreur modification bloc" }, { status: 500 });
+  }
+}
