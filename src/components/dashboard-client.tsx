@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { 
   Target, 
@@ -9,10 +10,9 @@ import {
   Square, 
   Plus, 
   Sparkles, 
-  Shield, 
-  BookOpen, 
   Layers, 
-  Eye 
+  Eye, 
+  BookOpen 
 } from "lucide-react";
 
 interface ActionItem {
@@ -56,31 +56,61 @@ function formatMinutesToHours(minutesInput: any): string {
   return `${h}h${m < 10 ? "0" : ""}${m}`;
 }
 
+function parseActionContent(rawContent: string) {
+  const match = rawContent.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
+  if (match) {
+    const [_, dateStr, text] = match;
+    const formattedDate = new Date(dateStr).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+    });
+    return { dateStr: formattedDate, text };
+  }
+  return { dateStr: null, text: rawContent };
+}
+
 export function DashboardClient({
   todayLabel,
   areas = [],
-  blocks = [],
+  blocks: initialBlocks = [],
   stats = {},
 }: DashboardClientProps) {
-  // Sécurisation des calculs
-  const activeBlocksCount = stats?.activeBlocks ?? blocks.length ?? 0;
-  
-  const allActions = blocks.flatMap((b) => b.actions || []);
+  const [blocksList, setBlocksList] = useState<BlockFull[]>(initialBlocks);
+
+  async function toggleAction(actionId: string, currentCompleted: boolean) {
+    const nextState = !currentCompleted;
+    setBlocksList((prevBlocks) =>
+      prevBlocks.map((b) => ({
+        ...b,
+        actions: b.actions.map((a) => (a.id === actionId ? { ...a, completed: nextState } : a)),
+      }))
+    );
+
+    try {
+      await fetch(`/api/actions/${actionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: nextState }),
+      });
+    } catch (err) {
+      console.error("Erreur toggle action :", err);
+    }
+  }
+
+  const allActions = blocksList.flatMap((b) => b.actions || []);
+  const activeBlocksCount = blocksList.length;
   const mustActions = allActions.filter((a) => a.isMust);
   const mustCompletedCount = mustActions.filter((a) => a.completed).length;
   const mustTotalCount = mustActions.length;
 
   const totalActionsCount = allActions.length;
   const completedActionsCount = allActions.filter((a) => a.completed).length;
-  
-  const rawMomentum = stats?.momentum ?? (totalActionsCount > 0 ? Math.round((completedActionsCount / totalActionsCount) * 100) : 0);
-  const safeMomentum = isNaN(Number(rawMomentum)) ? 0 : Number(rawMomentum);
+  const safeMomentum = totalActionsCount > 0 ? Math.round((completedActionsCount / totalActionsCount) * 100) : 0;
 
-  const rawMinutes = stats?.remainingMinutes ?? allActions.filter((a) => !a.completed).reduce((acc, a) => acc + (a.minutes || 15), 0);
+  const rawMinutes = allActions.filter((a) => !a.completed).reduce((acc, a) => acc + (a.minutes || 15), 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold text-zinc-100">
@@ -96,7 +126,6 @@ export function DashboardClient({
         </Link>
       </div>
 
-      {/* Cartes Métriques */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 shadow-xl">
           <div className="flex items-center justify-between text-xs font-bold text-amber-400 uppercase">
@@ -139,7 +168,6 @@ export function DashboardClient({
         </div>
       </div>
 
-      {/* Navigation Rapide */}
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
         <Link href="/planifier" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#0d0d10] p-4 text-xs font-bold text-zinc-200 hover:border-amber-400/50 hover:text-amber-300 transition-all">
           <Layers className="h-5 w-5 text-amber-400" /> Planification RPM
@@ -155,9 +183,7 @@ export function DashboardClient({
         </Link>
       </div>
 
-      {/* Section Blocs & MUST */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Les MUST */}
         <div className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
           <h2 className="text-sm font-bold text-amber-300 uppercase flex items-center gap-2">
             <Flame className="h-4 w-4 text-rose-400" /> Les MUST de ta semaine
@@ -166,20 +192,37 @@ export function DashboardClient({
             <p className="text-xs text-zinc-500 italic">Aucune action MUST définie pour le moment.</p>
           ) : (
             <div className="space-y-2">
-              {mustActions.map((act) => (
-                <div key={act.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-zinc-200">
-                  <div className="flex items-center gap-2.5">
-                    {act.completed ? <CheckSquare className="h-4 w-4 text-emerald-400" /> : <Square className="h-4 w-4 text-zinc-500" />}
-                    <span className={act.completed ? "line-through text-zinc-500" : "font-medium"}>{act.content}</span>
+              {mustActions.map((act) => {
+                const { dateStr, text } = parseActionContent(act.content);
+                const isCompleted = Boolean(act.completed);
+
+                return (
+                  <div
+                    key={act.id}
+                    onClick={() => toggleAction(act.id, isCompleted)}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-zinc-200 cursor-pointer hover:border-amber-400/40 transition-all select-none"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {isCompleted ? (
+                        <CheckSquare className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                      ) : (
+                        <Square className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                      )}
+                      <span className={isCompleted ? "line-through text-zinc-500" : "font-medium"}>
+                        {text}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+                      {dateStr && <span className="text-amber-300/80 font-semibold">📅 {dateStr}</span>}
+                      {act.minutes && <span>⏱️ {act.minutes}m</span>}
+                    </div>
                   </div>
-                  {act.minutes && <span className="text-[11px] text-zinc-500">⏱️ {act.minutes}m</span>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Roue de la Vie (Aperçu) */}
         <div className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-amber-300 uppercase">Roue de ta vie</h2>
