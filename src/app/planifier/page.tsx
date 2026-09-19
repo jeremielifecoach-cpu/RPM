@@ -3,7 +3,21 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Target, Flame, Clock, Plus, Calendar, CalendarDays, Copy, ArrowRightCircle, Trash2, Filter } from "lucide-react";
+import {
+  ArrowLeft,
+  Target,
+  Flame,
+  Clock,
+  Plus,
+  Calendar,
+  CalendarDays,
+  Copy,
+  ArrowRightCircle,
+  Trash2,
+  Filter,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +25,21 @@ interface ActionInput {
   content: string;
   isMust: boolean;
   minutes: number;
-  day: string;
+  date: string;
 }
 
-const DAYS_OF_WEEK = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+function parseActionContent(rawContent: string) {
+  const match = rawContent.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
+  if (match) {
+    const [_, dateStr, text] = match;
+    const formattedDate = new Date(dateStr).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+    });
+    return { dateStr: formattedDate, text };
+  }
+  return { dateStr: null, text: rawContent };
+}
 
 function PlanifierContent() {
   const searchParams = useSearchParams();
@@ -26,8 +51,10 @@ function PlanifierContent() {
   const [selectedAreaId, setSelectedAreaId] = useState("");
   const [targetBlockId, setTargetBlockId] = useState(searchParams.get("targetBlockId") || "");
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split("T")[0]);
+
+  const todayStr = new Date().toISOString().split("T")[0];
   const [actionsList, setActionsList] = useState<ActionInput[]>([
-    { content: searchParams.get("action") || "", isMust: false, minutes: 15, day: "Lundi" },
+    { content: searchParams.get("action") || "", isMust: false, minutes: 15, date: todayStr },
   ]);
 
   useEffect(() => {
@@ -44,7 +71,7 @@ function PlanifierContent() {
   }
 
   function addActionRow() {
-    setActionsList((prev) => [...prev, { content: "", isMust: false, minutes: 15, day: "Lundi" }]);
+    setActionsList((prev) => [...prev, { content: "", isMust: false, minutes: 15, date: todayStr }]);
   }
 
   function updateActionRow(index: number, fields: Partial<ActionInput>) {
@@ -53,6 +80,13 @@ function PlanifierContent() {
 
   async function handleCreateOrAppend(e: React.FormEvent) {
     e.preventDefault();
+
+    const formattedActions = actionsList
+      .filter((a) => a.content.trim())
+      .map((a) => ({
+        ...a,
+        content: a.date ? `[${a.date}] ${a.content.trim()}` : a.content.trim(),
+      }));
 
     const res = await fetch("/api/blocks", {
       method: "POST",
@@ -63,7 +97,7 @@ function PlanifierContent() {
         purpose,
         weekStart: scheduledDate,
         areaId: selectedAreaId || null,
-        actionsList: actionsList.filter((a) => a.content.trim()),
+        actionsList: formattedActions,
       }),
     });
 
@@ -71,8 +105,28 @@ function PlanifierContent() {
       setResult("");
       setPurpose("");
       setTargetBlockId("");
-      setActionsList([{ content: "", isMust: false, minutes: 15, day: "Lundi" }]);
+      setActionsList([{ content: "", isMust: false, minutes: 15, date: todayStr }]);
       loadData();
+    }
+  }
+
+  async function toggleAction(actionId: string, currentCompleted: boolean) {
+    const nextCompleted = !currentCompleted;
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((b) => ({
+        ...b,
+        actions: b.actions.map((a: any) => (a.id === actionId ? { ...a, completed: nextCompleted } : a)),
+      }))
+    );
+
+    try {
+      await fetch(`/api/actions/${actionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: nextCompleted }),
+      });
+    } catch (err) {
+      console.error("Erreur toggle action :", err);
     }
   }
 
@@ -142,7 +196,7 @@ function PlanifierContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-400">Date / Semaine cible (Calendrier)</label>
+              <label className="text-xs font-bold text-zinc-400">Date globale du bloc</label>
               <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-zinc-200">
                 <Calendar className="h-4 w-4 text-amber-400" />
                 <input
@@ -167,7 +221,7 @@ function PlanifierContent() {
         )}
 
         <div className="space-y-3 border-t border-white/10 pt-3">
-          <label className="text-xs font-bold text-amber-300 uppercase block">Actions Massives (M)</label>
+          <label className="text-xs font-bold text-amber-300 uppercase block">3. Actions Massives (M) & Dates Précises</label>
 
           {actionsList.map((act, index) => (
             <div key={index} className="flex flex-wrap items-center gap-2">
@@ -180,11 +234,12 @@ function PlanifierContent() {
 
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
                 <CalendarDays className="h-3.5 w-3.5 text-amber-400" />
-                <select value={act.day} onChange={(e) => updateActionRow(index, { day: e.target.value })} className="bg-transparent outline-none cursor-pointer">
-                  {DAYS_OF_WEEK.map((d) => (
-                    <option key={d} value={d} className="bg-zinc-900">{d}</option>
-                  ))}
-                </select>
+                <input
+                  type="date"
+                  value={act.date}
+                  onChange={(e) => updateActionRow(index, { date: e.target.value })}
+                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer"
+                />
               </div>
 
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
@@ -220,11 +275,10 @@ function PlanifierContent() {
         </button>
       </form>
 
-      {/* Header avec Filtre par Domaine */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-zinc-300 uppercase">Blocs RPM en cours ({filteredBlocks.length})</h2>
-          
+
           <div className="flex items-center gap-2 bg-[#0d0d10] border border-white/10 rounded-xl px-3 py-1.5 text-xs">
             <Filter className="h-3.5 w-3.5 text-amber-400" />
             <select
@@ -280,17 +334,34 @@ function PlanifierContent() {
               </div>
 
               <div className="space-y-1.5">
-                {b.actions.map((act: any) => (
-                  <div key={act.id} className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-1.5 text-xs text-zinc-200">
-                    <div className="flex items-center gap-2">
-                      {act.isMust && <span className="text-rose-400 font-bold">🔥 MUST</span>}
-                      <span>{act.content}</span>
+                {b.actions.map((act: any) => {
+                  const { dateStr, text } = parseActionContent(act.content);
+                  const isCompleted = Boolean(act.completed);
+
+                  return (
+                    <div
+                      key={act.id}
+                      onClick={() => toggleAction(act.id, isCompleted)}
+                      className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-2 text-xs text-zinc-200 cursor-pointer hover:border hover:border-amber-400/40 transition-all select-none"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {isCompleted ? (
+                          <CheckSquare className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <Square className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                        )}
+                        {act.isMust && <span className="text-rose-400 font-bold flex-shrink-0">🔥 MUST</span>}
+                        <span className={isCompleted ? "line-through text-zinc-500" : "font-medium"}>
+                          {text}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-zinc-500 text-[11px]">
+                        {dateStr && <span className="text-amber-300/80 font-semibold">📅 {dateStr}</span>}
+                        {act.minutes && <span>⏱️ {act.minutes}m</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-zinc-500 text-[11px]">
-                      {act.minutes && <span>⏱️ {act.minutes}m</span>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
@@ -306,4 +377,5 @@ export default function PlanifierPage() {
       <PlanifierContent />
     </Suspense>
   );
-}
+      }
+                   
