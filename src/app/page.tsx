@@ -17,16 +17,45 @@ export default async function HomePage() {
     actions: actionsData.filter((a) => a.blockId === b.id),
   }));
 
+  const activeBlocks = fullBlocks.length;
   const totalActions = actionsData.length;
   const completedActions = actionsData.filter((a) => a.completed).length;
-  const mustActions = actionsData.filter((a) => a.isMust).length;
+
+  const mustActionsList = actionsData.filter((a) => a.isMust);
+  const mustActions = mustActionsList.length;
+  const mustCompleted = mustActionsList.filter((a) => a.completed).length;
+
+  const uncompletedActions = actionsData.filter((a) => !a.completed);
+  const remainingMinutes = uncompletedActions.reduce((acc, a) => acc + (a.minutes || 15), 0);
+  const completionRate = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
 
   const stats = {
-    totalBlocks: fullBlocks.length,
+    // Blocs actifs
+    activeBlocks,
+    totalBlocks: activeBlocks,
+    activeBlocksCount: activeBlocks,
+
+    // Actions
     totalActions,
     completedActions,
+
+    // MUST
     mustActions,
-    completionRate: totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0,
+    mustTotal: mustActions,
+    mustCompleted,
+    mustDone: mustCompleted,
+
+    // Élan de semaine / Taux
+    completionRate,
+    completionPercentage: completionRate,
+    elan: completionRate,
+    momentum: completionRate,
+
+    // Temps restant (évite le NaNhNaN)
+    remainingMinutes,
+    totalRemainingMinutes: remainingMinutes,
+    remainingHours: Math.floor(remainingMinutes / 60),
+    remainingMins: remainingMinutes % 60,
   };
 
   const now = new Date();
@@ -47,4 +76,4 @@ export default async function HomePage() {
       stats={stats as any}
     />
   );
-    }
+      }
