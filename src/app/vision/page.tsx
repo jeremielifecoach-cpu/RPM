@@ -154,31 +154,31 @@ export default function VisionPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs font-bold text-zinc-300">1. Vision Ultime</label>
-                  <textarea rows={2} value={data.vision} onChange={(e) => handleChange(pillar.id, "vision", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={3} value={data.vision} onChange={(e) => handleChange(pillar.id, "vision", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs font-bold text-zinc-300">2. Raison d&apos;être / Pourquoi</label>
-                  <textarea rows={2} value={data.purpose} onChange={(e) => handleChange(pillar.id, "purpose", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={3} value={data.purpose} onChange={(e) => handleChange(pillar.id, "purpose", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">3. Rôle & Identité</label>
-                  <input value={data.identity} onChange={(e) => handleChange(pillar.id, "identity", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={2} value={data.identity} onChange={(e) => handleChange(pillar.id, "identity", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">4. Valeurs Clés</label>
-                  <input value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={2} value={data.values} onChange={(e) => handleChange(pillar.id, "values", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-amber-300">5. Les 3 Leviers d&apos;Action</label>
-                  <input value={data.levers} onChange={(e) => handleChange(pillar.id, "levers", e.target.value)} placeholder="Ex : Routine matinale, Ritualisation, Time-blocking" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={2} value={data.levers} onChange={(e) => handleChange(pillar.id, "levers", e.target.value)} placeholder="Ex : Routine matinale, Ritualisation, Time-blocking" className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300">6. Ressources Nécessaires</label>
-                  <input value={data.resources} onChange={(e) => handleChange(pillar.id, "resources", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={2} value={data.resources} onChange={(e) => handleChange(pillar.id, "resources", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs font-bold text-zinc-300">7. Stratégies Clés & Objectif à 1 an</label>
-                  <textarea rows={2} value={data.strategy} onChange={(e) => handleChange(pillar.id, "strategy", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none" />
+                  <textarea rows={3} value={data.strategy} onChange={(e) => handleChange(pillar.id, "strategy", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-zinc-100 outline-none resize-y" />
                 </div>
               </div>
 
@@ -187,19 +187,19 @@ export default function VisionPage() {
                 <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q1 (Jan - Mar)</span>
-                    <input value={data.q1} onChange={(e) => handleChange(pillar.id, "q1", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <textarea rows={2} value={data.q1} onChange={(e) => handleChange(pillar.id, "q1", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none resize-y" />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q2 (Avr - Juin)</span>
-                    <input value={data.q2} onChange={(e) => handleChange(pillar.id, "q2", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <textarea rows={2} value={data.q2} onChange={(e) => handleChange(pillar.id, "q2", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none resize-y" />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q3 (Juil - Sept)</span>
-                    <input value={data.q3} onChange={(e) => handleChange(pillar.id, "q3", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <textarea rows={2} value={data.q3} onChange={(e) => handleChange(pillar.id, "q3", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none resize-y" />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-zinc-400">Q4 (Oct - Déc)</span>
-                    <input value={data.q4} onChange={(e) => handleChange(pillar.id, "q4", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                    <textarea rows={2} value={data.q4} onChange={(e) => handleChange(pillar.id, "q4", e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none resize-y" />
                   </div>
                 </div>
               </div>
@@ -210,4 +210,3 @@ export default function VisionPage() {
     </div>
   );
 }
-  
