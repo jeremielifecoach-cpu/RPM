@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Inbox, Plus, Trash2, Target, HelpCircle, CheckSquare, Layers } from "lucide-react";
+import { ArrowLeft, Inbox, Plus, Trash2, Target, HelpCircle, CheckSquare, Layers, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +11,12 @@ export default function CapturePage() {
   const [captures, setCaptures] = useState<any[]>([]);
   const [existingBlocks, setExistingBlocks] = useState<any[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<Record<string, string>>({});
+  const [selectedDates, setSelectedDates] = useState<Record<string, string>>({});
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     loadData();
@@ -64,20 +67,24 @@ export default function CapturePage() {
 
   function handleConvert(capture: any, mode: "R" | "P" | "M") {
     const targetBlockId = selectedBlockId[capture.id];
+    const dateStr = selectedDates[capture.id] || todayStr;
     const paramKey = mode === "R" ? "result" : mode === "P" ? "purpose" : "action";
 
+    let url = `/planifier?${paramKey}=${encodeURIComponent(capture.content)}&captureId=${capture.id}&date=${dateStr}`;
     if (targetBlockId) {
-      router.push(`/planifier?${paramKey}=${encodeURIComponent(capture.content)}&targetBlockId=${targetBlockId}&captureId=${capture.id}`);
-    } else {
-      router.push(`/planifier?${paramKey}=${encodeURIComponent(capture.content)}&captureId=${capture.id}`);
+      url += `&targetBlockId=${targetBlockId}`;
     }
+
+    router.push(url);
   }
+
+  if (loading) return <div className="p-8 text-center text-xs text-zinc-500">Chargement...</div>;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-4 sm:p-6">
       <div>
         <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-amber-300">
-          <ArrowLeft className="h-3.5 w-3.5" /> Retour
+          <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
         </Link>
         <h1 className="mt-2 font-display text-3xl font-bold text-zinc-100 flex items-center gap-2">
           <Inbox className="h-7 w-7 text-amber-400" />
@@ -90,11 +97,11 @@ export default function CapturePage() {
           rows={3}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Note ta pensée..."
+          placeholder="Ex : Réserver le studio de tournage..."
           className="w-full rounded-xl border border-white/10 bg-black/40 p-3.5 text-sm text-zinc-100 outline-none"
         />
         <div className="flex justify-end">
-          <button type="submit" className="rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-black hover:bg-amber-400">
+          <button type="submit" disabled={!content.trim()} className="rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-black hover:bg-amber-400">
             <Plus className="h-4 w-4 inline mr-1" /> Capturer
           </button>
         </div>
@@ -102,55 +109,71 @@ export default function CapturePage() {
 
       <div className="space-y-4">
         <h2 className="text-xs font-bold text-zinc-400 uppercase">Boîte de réception ({captures.length})</h2>
-        {captures.map((item) => (
-          <div key={item.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-zinc-200 text-sm">{item.content}</span>
-              <button onClick={() => handleDelete(item.id)} className="p-1 text-zinc-600 hover:text-rose-400">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
-              <div className="flex items-center gap-1.5 bg-black/50 border border-white/10 rounded-xl px-2.5 py-1">
-                <Layers className="h-3.5 w-3.5 text-amber-400" />
-                <select
-                  value={selectedBlockId[item.id] || ""}
-                  onChange={(e) => setSelectedBlockId((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                  className="bg-transparent text-xs text-zinc-300 outline-none"
-                >
-                  <option value="">➕ Nouveau bloc RPM</option>
-                  {existingBlocks.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      📌 {b.result.slice(0, 30)}...
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-1.5 ml-auto">
-                <button
-                  onClick={() => handleConvert(item, "R")}
-                  className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20"
-                >
-                  <Target className="h-3.5 w-3.5" /> Résultat (R)
-                </button>
-                <button
-                  onClick={() => handleConvert(item, "P")}
-                  className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" /> Pourquoi (P)
-                </button>
-                <button
-                  onClick={() => handleConvert(item, "M")}
-                  className="flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-xs font-bold text-sky-300 hover:bg-sky-500/20"
-                >
-                  <CheckSquare className="h-3.5 w-3.5" /> Action (M)
+        {captures.length === 0 ? (
+          <p className="text-xs text-zinc-500 italic">Aucune idée en attente dans la boîte de réception.</p>
+        ) : (
+          captures.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-zinc-200 text-sm">{item.content}</span>
+                <button onClick={() => handleDelete(item.id)} className="p-1 text-zinc-600 hover:text-rose-400">
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
+
+              <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                {/* Choix du Bloc */}
+                <div className="flex items-center gap-1.5 bg-black/50 border border-white/10 rounded-xl px-2.5 py-1">
+                  <Layers className="h-3.5 w-3.5 text-amber-400" />
+                  <select
+                    value={selectedBlockId[item.id] || ""}
+                    onChange={(e) => setSelectedBlockId((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    className="bg-transparent text-xs text-zinc-300 outline-none"
+                  >
+                    <option value="">➕ Nouveau bloc RPM</option>
+                    {existingBlocks.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        📌 {b.result.slice(0, 30)}...
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Choix de Date */}
+                <div className="flex items-center gap-1 bg-black/50 border border-white/10 rounded-xl px-2.5 py-1">
+                  <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                  <input
+                    type="date"
+                    value={selectedDates[item.id] || todayStr}
+                    onChange={(e) => setSelectedDates((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    className="bg-transparent text-xs text-zinc-300 outline-none cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <button
+                    onClick={() => handleConvert(item, "R")}
+                    className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20"
+                  >
+                    <Target className="h-3.5 w-3.5" /> Résultat (R)
+                  </button>
+                  <button
+                    onClick={() => handleConvert(item, "P")}
+                    className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" /> Pourquoi (P)
+                  </button>
+                  <button
+                    onClick={() => handleConvert(item, "M")}
+                    className="flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-xs font-bold text-sky-300 hover:bg-sky-500/20"
+                  >
+                    <CheckSquare className="h-3.5 w-3.5" /> Action (M)
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
