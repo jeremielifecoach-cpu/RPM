@@ -67,23 +67,23 @@ function buildActionContent(dateStr: string, status: ActionStatus, cleanText: st
 
 function PlanifierContent() {
   const searchParams = useSearchParams();
+  const captureId = searchParams.get("captureId");
+  const initialDate = searchParams.get("date") || new Date().toISOString().split("T")[0];
+
   const [areas, setAreas] = useState<any[]>([]);
   const [blocks, setBlocks] = useState<any[]>([]);
   const [filterAreaId, setFilterAreaId] = useState("");
-  
-  // Nouveaux blocs
+
   const [result, setResult] = useState(searchParams.get("result") || "");
   const [purpose, setPurpose] = useState(searchParams.get("purpose") || "");
   const [selectedAreaId, setSelectedAreaId] = useState("");
   const [targetBlockId, setTargetBlockId] = useState(searchParams.get("targetBlockId") || "");
-  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split("T")[0]);
+  const [scheduledDate, setScheduledDate] = useState(initialDate);
 
-  const todayStr = new Date().toISOString().split("T")[0];
   const [actionsList, setActionsList] = useState<ActionInput[]>([
-    { content: searchParams.get("action") || "", isMust: false, minutes: 15, date: todayStr },
+    { content: searchParams.get("action") || "", isMust: false, minutes: 15, date: initialDate },
   ]);
 
-  // Mode Édition de bloc
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editBlockData, setEditBlockData] = useState<{ result: string; purpose: string; areaId: string; weekStart: string }>({
     result: "",
@@ -92,7 +92,6 @@ function PlanifierContent() {
     weekStart: "",
   });
 
-  // Mode Édition d'action
   const [editingActionId, setEditingActionId] = useState<string | null>(null);
   const [editActionData, setEditActionData] = useState<{ cleanText: string; dateStr: string; minutes: number }>({
     cleanText: "",
@@ -114,7 +113,7 @@ function PlanifierContent() {
   }
 
   function addActionRow() {
-    setActionsList((prev) => [...prev, { content: "", isMust: false, minutes: 15, date: todayStr }]);
+    setActionsList((prev) => [...prev, { content: "", isMust: false, minutes: 15, date: scheduledDate }]);
   }
 
   function updateActionRow(index: number, fields: Partial<ActionInput>) {
@@ -145,22 +144,25 @@ function PlanifierContent() {
     });
 
     if (res.ok) {
+      if (captureId) {
+        await fetch(`/api/captures/${captureId}`, { method: "DELETE" });
+      }
+
       setResult("");
       setPurpose("");
       setTargetBlockId("");
-      setActionsList([{ content: "", isMust: false, minutes: 15, date: todayStr }]);
+      setActionsList([{ content: "", isMust: false, minutes: 15, date: new Date().toISOString().split("T")[0] }]);
       loadData();
     }
   }
 
-  // --- Gestion du bloc ---
   function startEditingBlock(block: any) {
     setEditingBlockId(block.id);
     setEditBlockData({
       result: block.result || "",
       purpose: block.purpose || "",
       areaId: block.areaId || "",
-      weekStart: block.weekStart || todayStr,
+      weekStart: block.weekStart || new Date().toISOString().split("T")[0],
     });
   }
 
@@ -198,7 +200,6 @@ function PlanifierContent() {
     if (res.ok) loadData();
   }
 
-  // --- Gestion des Actions ---
   async function updateActionStatus(act: any, newStatus: ActionStatus, newDateStr?: string) {
     const { dateStr, cleanText } = parseAction(act.content, act.completed);
     const targetDate = newDateStr !== undefined ? newDateStr : dateStr;
@@ -230,7 +231,7 @@ function PlanifierContent() {
     setEditingActionId(act.id);
     setEditActionData({
       cleanText,
-      dateStr: dateStr || todayStr,
+      dateStr: dateStr || new Date().toISOString().split("T")[0],
       minutes: act.minutes || 15,
     });
   }
@@ -535,7 +536,6 @@ function PlanifierContent() {
                       ) : (
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-1">
-                            {/* Boutons de Statuts */}
                             <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 rounded-lg p-1">
                               <button
                                 onClick={() => updateActionStatus(act, "todo")}
@@ -553,7 +553,7 @@ function PlanifierContent() {
                               </button>
                               <button
                                 onClick={() => {
-                                  const newDate = prompt("Nouvelle date pour cette action reportée (AAAA-MM-JJ) :", dateStr || todayStr);
+                                  const newDate = prompt("Nouvelle date pour cette action reportée (AAAA-MM-JJ) :", dateStr || new Date().toISOString().split("T")[0]);
                                   if (newDate) updateActionStatus(act, "postponed", newDate);
                                 }}
                                 title="Reporté (changer la date)"
