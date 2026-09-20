@@ -4,12 +4,32 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft, Target, Flame, Clock, Plus, Calendar, CalendarDays, Copy, ArrowRightCircle, Trash2, Filter, Square, Pencil, Save, X,
+  ArrowLeft,
+  Target,
+  Flame,
+  Clock,
+  Plus,
+  Calendar,
+  CalendarDays,
+  Copy,
+  ArrowRightCircle,
+  Trash2,
+  Filter,
+  Square,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-interface ActionInput { content: string; isMust: boolean; minutes: number; date: string; }
+interface ActionInput {
+  content: string;
+  isMust: boolean;
+  minutes: number;
+  date: string;
+}
+
 type ActionStatus = "todo" | "in_progress" | "postponed" | "done";
 
 function parseAction(rawContent: string, isCompletedFromDb?: boolean | null) {
@@ -60,18 +80,29 @@ function PlanifierContent() {
 
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editBlockData, setEditBlockData] = useState<{ result: string; purpose: string; areaId: string; weekStart: string }>({
-    result: "", purpose: "", areaId: "", weekStart: "",
+    result: "",
+    purpose: "",
+    areaId: "",
+    weekStart: "",
   });
 
   const [editingActionId, setEditingActionId] = useState<string | null>(null);
   const [editActionData, setEditActionData] = useState<{ cleanText: string; dateStr: string; minutes: number; isMust: boolean }>({
-    cleanText: "", dateStr: "", minutes: 15, isMust: false,
+    cleanText: "",
+    dateStr: "",
+    minutes: 15,
+    isMust: false,
   });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   async function loadData() {
-    const [resA, resB] = await Promise.all([fetch("/api/areas", { cache: "no-store" }), fetch("/api/blocks", { cache: "no-store" })]);
+    const [resA, resB] = await Promise.all([
+      fetch("/api/areas", { cache: "no-store" }),
+      fetch("/api/blocks", { cache: "no-store" }),
+    ]);
     if (resA.ok) setAreas(await resA.json());
     if (resB.ok) setBlocks(await resB.json());
   }
@@ -86,21 +117,28 @@ function PlanifierContent() {
 
   async function handleCreateOrAppend(e: React.FormEvent) {
     e.preventDefault();
-    const formattedActions = actionsList.filter((a) => a.content.trim()).map((a) => ({
-      ...a, content: buildActionContent(a.date, "todo", a.content),
-    }));
+    const formattedActions = actionsList
+      .filter((a) => a.content.trim())
+      .map((a) => ({
+        ...a,
+        content: buildActionContent(a.date, "todo", a.content),
+      }));
 
     const res = await fetch("/api/blocks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        targetBlockId: targetBlockId || undefined, result, purpose, weekStart: scheduledDate, areaId: selectedAreaId || null, actionsList: formattedActions,
+        targetBlockId: targetBlockId || undefined,
+        result,
+        purpose,
+        weekStart: scheduledDate,
+        areaId: selectedAreaId || null,
+        actionsList: formattedActions,
       }),
     });
 
     if (res.ok) {
       if (captureId) {
-        // Archivage automatique de la capture source
         const capRes = await fetch("/api/captures");
         if (capRes.ok) {
           const caps = await capRes.json();
@@ -114,7 +152,9 @@ function PlanifierContent() {
           }
         }
       }
-      setResult(""); setPurpose(""); setTargetBlockId("");
+      setResult("");
+      setPurpose("");
+      setTargetBlockId("");
       setActionsList([{ content: "", isMust: false, minutes: 15, date: new Date().toISOString().split("T")[0] }]);
       loadData();
     }
@@ -123,15 +163,21 @@ function PlanifierContent() {
   function startEditingBlock(block: any) {
     setEditingBlockId(block.id);
     setEditBlockData({
-      result: block.result || "", purpose: block.purpose || "", areaId: block.areaId || "", weekStart: block.weekStart || new Date().toISOString().split("T")[0],
+      result: block.result || "",
+      purpose: block.purpose || "",
+      areaId: block.areaId || "",
+      weekStart: block.weekStart || new Date().toISOString().split("T")[0],
     });
   }
 
   async function saveBlockChanges(blockId: string) {
     await fetch(`/api/blocks/${blockId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editBlockData),
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editBlockData),
     });
-    setEditingBlockId(null); loadData();
+    setEditingBlockId(null);
+    loadData();
   }
 
   async function handleDeleteBlock(blockId: string) {
@@ -140,7 +186,11 @@ function PlanifierContent() {
   }
 
   async function handleBlockAction(blockId: string, actionType: "duplicate" | "carryOver") {
-    await fetch("/api/blocks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blockId, actionType }) });
+    await fetch("/api/blocks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blockId, actionType }),
+    });
     loadData();
   }
 
@@ -150,14 +200,28 @@ function PlanifierContent() {
     const isCompleted = newStatus === "done";
     const newContent = buildActionContent(targetDate, newStatus, cleanText);
 
-    setBlocks((prevBlocks) => prevBlocks.map((b) => ({ ...b, actions: b.actions.map((a: any) => a.id === act.id ? { ...a, content: newContent, completed: isCompleted } : a) })));
-    await fetch(`/api/actions/${act.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: newContent, completed: isCompleted }) });
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((b) => ({
+        ...b,
+        actions: b.actions.map((a: any) => (a.id === act.id ? { ...a, content: newContent, completed: isCompleted } : a)),
+      }))
+    );
+    await fetch(`/api/actions/${act.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newContent, completed: isCompleted }),
+    });
   }
 
   function startEditingAction(act: any) {
     const { dateStr, cleanText } = parseAction(act.content, act.completed);
     setEditingActionId(act.id);
-    setEditActionData({ cleanText, dateStr: dateStr || new Date().toISOString().split("T")[0], minutes: act.minutes || 15, isMust: Boolean(act.isMust) });
+    setEditActionData({
+      cleanText,
+      dateStr: dateStr || new Date().toISOString().split("T")[0],
+      minutes: act.minutes || 15,
+      isMust: Boolean(act.isMust),
+    });
   }
 
   async function saveActionChanges(act: any) {
@@ -169,7 +233,8 @@ function PlanifierContent() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: newContent, minutes: editActionData.minutes, isMust: editActionData.isMust }),
     });
-    setEditingActionId(null); loadData();
+    setEditingActionId(null);
+    loadData();
   }
 
   const filteredBlocks = filterAreaId ? blocks.filter((b) => b.areaId === filterAreaId) : blocks;
@@ -177,39 +242,69 @@ function PlanifierContent() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
       <div>
-        <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-amber-300"><ArrowLeft className="h-3.5 w-3.5" /> Dashboard</Link>
-        <h1 className="mt-2 font-display text-3xl font-bold text-zinc-100 flex items-center gap-2"><Target className="h-7 w-7 text-amber-400" /> Planification <span className="italic text-amber-300">RPM</span></h1>
+        <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-amber-300">
+          <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
+        </Link>
+        <h1 className="mt-2 font-display text-3xl font-bold text-zinc-100 flex items-center gap-2">
+          <Target className="h-7 w-7 text-amber-400" /> Planification <span className="italic text-amber-300">RPM</span>
+        </h1>
       </div>
 
       <form onSubmit={handleCreateOrAppend} className="space-y-5 rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl">
         {targetBlockId && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs font-bold text-amber-300 flex items-center justify-between">
             <span>Rattachement à un bloc RPM existant sélectionné</span>
-            <button type="button" onClick={() => setTargetBlockId("")} className="underline">Créer un nouveau bloc à la place</button>
+            <button type="button" onClick={() => setTargetBlockId("")} className="underline">
+              Créer un nouveau bloc à la place
+            </button>
           </div>
         )}
         {!targetBlockId && (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-xs font-bold text-amber-300 uppercase">1. Résultat Visé (R)</label>
-              <input value={result} onChange={(e) => setResult(e.target.value)} placeholder="Ex : Lancer ma nouvelle offre" className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none" />
+              <input
+                value={result}
+                onChange={(e) => setResult(e.target.value)}
+                placeholder="Ex : Lancer ma nouvelle offre"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
+              />
             </div>
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-xs font-bold text-amber-300 uppercase">2. Raison d&apos;être / Pourquoi (P)</label>
-              <textarea rows={2} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Pourquoi est-ce crucial ?" className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none" />
+              <textarea
+                rows={2}
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="Pourquoi est-ce crucial ?"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-400">Date globale du bloc</label>
               <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-zinc-200">
                 <Calendar className="h-4 w-4 text-amber-400" />
-                <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer w-full" />
+                <input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer w-full"
+                />
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-400">Domaine de Vie</label>
-              <select value={selectedAreaId} onChange={(e) => setSelectedAreaId(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2.5 text-xs text-zinc-200 outline-none">
+              <select
+                value={selectedAreaId}
+                onChange={(e) => setSelectedAreaId(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2.5 text-xs text-zinc-200 outline-none"
+              >
                 <option value="">Sélectionner un domaine</option>
-                {areas.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+                {areas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -218,25 +313,53 @@ function PlanifierContent() {
           <label className="text-xs font-bold text-amber-300 uppercase block">3. Actions Massives (M) & Dates Précises</label>
           {actionsList.map((act, index) => (
             <div key={index} className="flex flex-wrap items-center gap-2">
-              <input value={act.content} onChange={(e) => updateActionRow(index, { content: e.target.value })} placeholder={`Action #${index + 1}`} className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none" />
+              <input
+                value={act.content}
+                onChange={(e) => updateActionRow(index, { content: e.target.value })}
+                placeholder={`Action #${index + 1}`}
+                className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none"
+              />
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
                 <CalendarDays className="h-3.5 w-3.5 text-amber-400" />
-                <input type="date" value={act.date} onChange={(e) => updateActionRow(index, { date: e.target.value })} className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer" />
+                <input
+                  type="date"
+                  value={act.date}
+                  onChange={(e) => updateActionRow(index, { date: e.target.value })}
+                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer"
+                />
               </div>
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <select value={act.minutes} onChange={(e) => updateActionRow(index, { minutes: Number(e.target.value) })} className="bg-transparent outline-none cursor-pointer">
-                  <option value={5}>5m</option><option value={15}>15m</option><option value={30}>30m</option><option value={60}>1h</option><option value={120}>2h</option>
+                <select
+                  value={act.minutes}
+                  onChange={(e) => updateActionRow(index, { minutes: Number(e.target.value) })}
+                  className="bg-transparent outline-none cursor-pointer"
+                >
+                  <option value={5}>5m</option>
+                  <option value={15}>15m</option>
+                  <option value={30}>30m</option>
+                  <option value={60}>1h</option>
+                  <option value={120}>2h</option>
                 </select>
               </div>
-              <button type="button" onClick={() => updateActionRow(index, { isMust: !act.isMust })} className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-bold ${act.isMust ? "border-rose-500/50 bg-rose-500/20 text-rose-300" : "border-white/10 text-zinc-500"}`}>
+              <button
+                type="button"
+                onClick={() => updateActionRow(index, { isMust: !act.isMust })}
+                className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-bold ${
+                  act.isMust ? "border-rose-500/50 bg-rose-500/20 text-rose-300" : "border-white/10 text-zinc-500"
+                }`}
+              >
                 <Flame className="h-3.5 w-3.5" /> MUST
               </button>
             </div>
           ))}
-          <button type="button" onClick={addActionRow} className="text-xs font-bold text-amber-400 flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> Ajouter une action</button>
+          <button type="button" onClick={addActionRow} className="text-xs font-bold text-amber-400 flex items-center gap-1">
+            <Plus className="h-3.5 w-3.5" /> Ajouter une action
+          </button>
         </div>
-        <button type="submit" className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-black hover:bg-amber-400">{targetBlockId ? "Ajouter l'action au bloc existant" : "Créer le bloc RPM"}</button>
+        <button type="submit" className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-black hover:bg-amber-400">
+          {targetBlockId ? "Ajouter l'action au bloc existant" : "Créer le bloc RPM"}
+        </button>
       </form>
 
       <div className="space-y-4">
@@ -244,9 +367,19 @@ function PlanifierContent() {
           <h2 className="text-sm font-bold text-zinc-300 uppercase">Blocs RPM en cours ({filteredBlocks.length})</h2>
           <div className="flex items-center gap-2 bg-[#0d0d10] border border-white/10 rounded-xl px-3 py-1.5 text-xs">
             <Filter className="h-3.5 w-3.5 text-amber-400" />
-            <select value={filterAreaId} onChange={(e) => setFilterAreaId(e.target.value)} className="bg-transparent text-zinc-200 outline-none cursor-pointer">
-              <option value="" className="bg-zinc-900">Tous les domaines</option>
-              {areas.map((a) => (<option key={a.id} value={a.id} className="bg-zinc-900">{a.name}</option>))}
+            <select
+              value={filterAreaId}
+              onChange={(e) => setFilterAreaId(e.target.value)}
+              className="bg-transparent text-zinc-200 outline-none cursor-pointer"
+            >
+              <option value="" className="bg-zinc-900">
+                Tous les domaines
+              </option>
+              {areas.map((a) => (
+                <option key={a.id} value={a.id} className="bg-zinc-900">
+                  {a.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -262,19 +395,49 @@ function PlanifierContent() {
                   <div className="space-y-3">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-amber-400 uppercase">Résultat Visé (R)</label>
-                      <input value={editBlockData.result} onChange={(e) => setEditBlockData({ ...editBlockData, result: e.target.value })} className="w-full rounded-xl border border-amber-500/40 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                      <input
+                        value={editBlockData.result}
+                        onChange={(e) => setEditBlockData({ ...editBlockData, result: e.target.value })}
+                        className="w-full rounded-xl border border-amber-500/40 bg-black/60 p-2 text-xs text-zinc-100 outline-none"
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-amber-400 uppercase">Pourquoi (P)</label>
-                      <textarea rows={2} value={editBlockData.purpose} onChange={(e) => setEditBlockData({ ...editBlockData, purpose: e.target.value })} className="w-full rounded-xl border border-amber-500/40 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
+                      <textarea
+                        rows={2}
+                        value={editBlockData.purpose}
+                        onChange={(e) => setEditBlockData({ ...editBlockData, purpose: e.target.value })}
+                        className="w-full rounded-xl border border-amber-500/40 bg-black/60 p-2 text-xs text-zinc-100 outline-none"
+                      />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <select value={editBlockData.areaId} onChange={(e) => setEditBlockData({ ...editBlockData, areaId: e.target.value })} className="rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-200 outline-none">
-                        <option value="">Sélectionner un domaine</option>{areas.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+                      <select
+                        value={editBlockData.areaId}
+                        onChange={(e) => setEditBlockData({ ...editBlockData, areaId: e.target.value })}
+                        className="rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-200 outline-none"
+                      >
+                        <option value="">Sélectionner un domaine</option>
+                        {areas.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
                       </select>
-                      <input type="date" value={editBlockData.weekStart} onChange={(e) => setEditBlockData({ ...editBlockData, weekStart: e.target.value })} className="rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none" />
-                      <button onClick={() => saveBlockChanges(b.id)} className="flex items-center gap-1 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-bold text-black hover:bg-amber-400"><Save className="h-3.5 w-3.5" /> Enregistrer le bloc</button>
-                      <button onClick={() => setEditingBlockId(null)} className="p-1.5 text-zinc-400 hover:text-white"><X className="h-4 w-4" /></button>
+                      <input
+                        type="date"
+                        value={editBlockData.weekStart}
+                        onChange={(e) => setEditBlockData({ ...editBlockData, weekStart: e.target.value })}
+                        className="rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none"
+                      />
+                      <button
+                        onClick={() => saveBlockChanges(b.id)}
+                        className="flex items-center gap-1 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-bold text-black hover:bg-amber-400"
+                      >
+                        <Save className="h-3.5 w-3.5" /> Enregistrer le bloc
+                      </button>
+                      <button onClick={() => setEditingBlockId(null)} className="p-1.5 text-zinc-400 hover:text-white">
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -282,17 +445,33 @@ function PlanifierContent() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-amber-400 uppercase">Résultat</span>
-                        {areaObj && <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">{areaObj.name}</span>}
-                        {b.weekStart && <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">📅 {b.weekStart}</span>}
+                        {areaObj && (
+                          <span className="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                            {areaObj.name}
+                          </span>
+                        )}
+                        {b.weekStart && (
+                          <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
+                            📅 {b.weekStart}
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-base font-bold text-zinc-100 mt-0.5">{b.result}</h3>
                       {b.purpose && <p className="text-xs italic text-zinc-400">&laquo; {b.purpose} &raquo;</p>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => startEditingBlock(b)} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Éditer le bloc"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => handleBlockAction(b.id, "duplicate")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Dupliquer"><Copy className="h-4 w-4" /></button>
-                      <button onClick={() => handleBlockAction(b.id, "carryOver")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Report S+1"><ArrowRightCircle className="h-4 w-4" /></button>
-                      <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer le bloc"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={() => startEditingBlock(b)} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Éditer le bloc">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleBlockAction(b.id, "duplicate")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Dupliquer">
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleBlockAction(b.id, "carryOver")} className="p-1.5 text-zinc-400 hover:text-amber-300" title="Report S+1">
+                        <ArrowRightCircle className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer le bloc">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -307,11 +486,113 @@ function PlanifierContent() {
                     <div key={act.id} className="rounded-xl border border-white/5 bg-black/40 p-3 text-xs text-zinc-200">
                       {isActionEditing ? (
                         <div className="flex flex-wrap items-center gap-2">
-                          <input value={editActionData.cleanText} onChange={(e) => setEditActionData({ ...editActionData, cleanText: e.target.value })} className="flex-1 rounded-lg border border-amber-500/40 bg-black/60 px-2.5 py-1 text-xs text-zinc-100 outline-none" />
-                          <input type="date" value={editActionData.dateStr} onChange={(e) => setEditActionData({ ...editActionData, dateStr: e.target.value })} className="rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-xs text-zinc-100 outline-none" />
-                          <select value={editActionData.minutes} onChange={(e) => setEditActionData({ ...editActionData, minutes: Number(e.target.value) })} className="rounded-lg border border-white/10 bg-black/60 p-1 text-xs text-zinc-100 outline-none">
-                            <option value={5}>5m</option><option value={15}>15m</option><option value={30}>30m</option><option value={60}>1h</option><option value={120}>2h</option>
+                          <input
+                            value={editActionData.cleanText}
+                            onChange={(e) => setEditActionData({ ...editActionData, cleanText: e.target.value })}
+                            className="flex-1 rounded-lg border border-amber-500/40 bg-black/60 px-2.5 py-1 text-xs text-zinc-100 outline-none"
+                          />
+                          <input
+                            type="date"
+                            value={editActionData.dateStr}
+                            onChange={(e) => setEditActionData({ ...editActionData, dateStr: e.target.value })}
+                            className="rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-xs text-zinc-100 outline-none"
+                          />
+                          <select
+                            value={editActionData.minutes}
+                            onChange={(e) => setEditActionData({ ...editActionData, minutes: Number(e.target.value) })}
+                            className="rounded-lg border border-white/10 bg-black/60 p-1 text-xs text-zinc-100 outline-none"
+                          >
+                            <option value={5}>5m</option>
+                            <option value={15}>15m</option>
+                            <option value={30}>30m</option>
+                            <option value={60}>1h</option>
+                            <option value={120}>2h</option>
                           </select>
-                          
-                          {/* Ajout du bouton MUST dans l'édition d'action */}
-                    
+                          <button
+                            type="button"
+                            onClick={() => setEditActionData({ ...editActionData, isMust: !editActionData.isMust })}
+                            className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-bold ${
+                              editActionData.isMust ? "border-rose-500/50 bg-rose-500/20 text-rose-300" : "border-white/10 text-zinc-500"
+                            }`}
+                          >
+                            <Flame className="h-3.5 w-3.5" /> MUST
+                          </button>
+                          <button onClick={() => saveActionChanges(act)} className="rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-bold text-black">
+                            <Save className="h-3.5 w-3.5 inline mr-1" /> OK
+                          </button>
+                          <button onClick={() => setEditingActionId(null)} className="p-1 text-zinc-400">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 rounded-lg p-1">
+                              <button
+                                onClick={() => updateActionStatus(act, "todo")}
+                                title="À faire"
+                                className={`px-1.5 py-0.5 rounded text-xs ${
+                                  status === "todo" ? "bg-zinc-700 text-white font-bold" : "text-zinc-500 hover:text-zinc-300"
+                                }`}
+                              >
+                                <Square className="h-3.5 w-3.5 inline" />
+                              </button>
+                              <button
+                                onClick={() => updateActionStatus(act, "in_progress")}
+                                title="En cours"
+                                className={`px-1.5 py-0.5 rounded text-xs ${status === "in_progress" ? "bg-sky-500/20 font-bold" : "opacity-60 hover:opacity-100"}`}
+                              >
+                                ✅
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newDate = prompt(
+                                    "Nouvelle date pour cette action reportée (AAAA-MM-JJ) :",
+                                    dateStr || new Date().toISOString().split("T")[0]
+                                  );
+                                  if (newDate) updateActionStatus(act, "postponed", newDate);
+                                }}
+                                title="Reporté (changer la date)"
+                                className={`px-1.5 py-0.5 rounded text-xs ${status === "postponed" ? "bg-amber-500/20 font-bold" : "opacity-60 hover:opacity-100"}`}
+                              >
+                                ➡️
+                              </button>
+                              <button
+                                onClick={() => updateActionStatus(act, "done")}
+                                title="Fait"
+                                className={`px-1.5 py-0.5 rounded text-xs ${status === "done" ? "bg-rose-500/20 font-bold" : "opacity-60 hover:opacity-100"}`}
+                              >
+                                ❌
+                              </button>
+                            </div>
+                            {act.isMust && <span className="text-rose-400 font-bold text-[11px]">🔥 MUST</span>}
+                            <span className={status === "done" ? "line-through text-zinc-500" : "font-medium"}>{cleanText}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-zinc-500 text-[11px]">
+                            {dateStr && <span className="text-amber-300/80 font-semibold">📅 {dateStr}</span>}
+                            {act.minutes && <span>⏱️ {act.minutes}m</span>}
+                            <button onClick={() => startEditingAction(act)} className="p-1 text-zinc-500 hover:text-amber-300" title="Modifier l'action">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function PlanifierPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500">Chargement...</div>}>
+      <PlanifierContent />
+    </Suspense>
+  );
+}
