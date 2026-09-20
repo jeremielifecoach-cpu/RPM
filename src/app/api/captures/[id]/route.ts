@@ -4,7 +4,7 @@ import { captures } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function DELETE(
-  request: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -12,9 +12,6 @@ export async function DELETE(
     await db.delete(captures).where(eq(captures.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Erreur lors de la suppression" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erreur suppression capture" }, { status: 500 });
   }
 }
