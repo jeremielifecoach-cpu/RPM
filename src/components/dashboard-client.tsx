@@ -69,6 +69,118 @@ function parseActionContent(rawContent: string) {
   return { dateStr: null, text: rawContent };
 }
 
+// --- NOUVEAU COMPOSANT : GRAPHIQUE ROUE DE LA VIE (RADAR) ---
+function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
+  if (!areas || areas.length === 0) {
+    return <p className="text-xs text-zinc-500 text-center py-8">Aucun domaine configuré.</p>;
+  }
+
+  const size = 320;
+  const center = size / 2;
+  const radius = 95;
+  const angleStep = (Math.PI * 2) / areas.length;
+
+  const getPoint = (value: number, index: number, customRadius = radius) => {
+    const r = (value / 10) * customRadius;
+    const angle = index * angleStep - Math.PI / 2;
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle),
+    };
+  };
+
+  const dataPoints = areas.map((a, i) => getPoint(a.score ?? 5, i));
+  const polygonPoints = dataPoints.map((p) => `${p.x},${p.y}`).join(" ");
+
+  return (
+    <div className="flex w-full justify-center py-4">
+      <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="max-w-[320px] overflow-visible">
+        {/* Toiles de fond (Grille) */}
+        {[2, 4, 6, 8, 10].map((level) => {
+          const levelPoints = areas.map((_, i) => {
+            const p = getPoint(level, i);
+            return `${p.x},${p.y}`;
+          }).join(" ");
+          return (
+            <polygon
+              key={level}
+              points={levelPoints}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.06)"
+              strokeWidth="1"
+            />
+          );
+        })}
+
+        {/* Lignes des Axes */}
+        {areas.map((_, i) => {
+          const p = getPoint(10, i);
+          return (
+            <line
+              key={`axis-${i}`}
+              x1={center}
+              y1={center}
+              x2={p.x}
+              y2={p.y}
+              stroke="rgba(255, 255, 255, 0.1)"
+              strokeWidth="1"
+            />
+          );
+        })}
+
+        {/* Forme Radar des Notes */}
+        {areas.length > 2 && (
+          <polygon
+            points={polygonPoints}
+            fill="rgba(251, 191, 36, 0.25)"
+            stroke="rgba(251, 191, 36, 0.9)"
+            strokeWidth="2"
+            className="transition-all duration-700"
+          />
+        )}
+
+        {/* Points et Noms des Domaines */}
+        {areas.map((area, i) => {
+          const p = getPoint(area.score ?? 5, i);
+          const labelP = getPoint(10, i, radius + 25);
+          
+          let textAnchor = "middle";
+          if (labelP.x < center - 10) textAnchor = "end";
+          if (labelP.x > center + 10) textAnchor = "start";
+
+          return (
+            <g key={`data-${i}`}>
+              <circle cx={p.x} cy={p.y} r="4" fill="#fbbf24" />
+              <text
+                x={labelP.x}
+                y={labelP.y - 6}
+                fill="#a1a1aa" // text-zinc-400
+                fontSize="11"
+                fontWeight="600"
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+              >
+                {area.name.length > 18 ? area.name.slice(0, 18) + "..." : area.name}
+              </text>
+              <text
+                x={labelP.x}
+                y={labelP.y + 8}
+                fill="#fbbf24" // text-amber-400
+                fontSize="11"
+                fontWeight="bold"
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+              >
+                {area.score ?? 5}/10
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 export function DashboardClient({
   todayLabel,
   areas = [],
@@ -223,24 +335,15 @@ export function DashboardClient({
           )}
         </div>
 
+        {/* Section Roue de la Vie avec Graphique Radar */}
         <div className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-amber-300 uppercase">Roue de ta vie</h2>
             <Link href="/domaines" className="text-xs font-bold text-amber-400 hover:underline">Ajuster</Link>
           </div>
-          <div className="space-y-3">
-            {areas.slice(0, 5).map((area) => (
-              <div key={area.id} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-zinc-300">{area.name}</span>
-                  <span className="font-bold text-amber-400">{area.score ?? 5}/10</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
-                  <div className="h-full bg-amber-400 transition-all" style={{ width: `${((area.score ?? 5) / 10) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+          
+          <WheelOfLifeChart areas={areas} />
+          
         </div>
       </div>
     </div>
