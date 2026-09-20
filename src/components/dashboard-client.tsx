@@ -69,7 +69,6 @@ function parseActionContent(rawContent: string) {
   return { dateStr: null, text: rawContent };
 }
 
-// --- NOUVEAU COMPOSANT : GRAPHIQUE ROUE DE LA VIE (RADAR) ---
 function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
   if (!areas || areas.length === 0) {
     return <p className="text-xs text-zinc-500 text-center py-8">Aucun domaine configuré.</p>;
@@ -95,7 +94,6 @@ function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
   return (
     <div className="flex w-full justify-center py-4">
       <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="max-w-[320px] overflow-visible">
-        {/* Toiles de fond (Grille) */}
         {[2, 4, 6, 8, 10].map((level) => {
           const levelPoints = areas.map((_, i) => {
             const p = getPoint(level, i);
@@ -112,7 +110,6 @@ function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
           );
         })}
 
-        {/* Lignes des Axes */}
         {areas.map((_, i) => {
           const p = getPoint(10, i);
           return (
@@ -128,7 +125,6 @@ function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
           );
         })}
 
-        {/* Forme Radar des Notes */}
         {areas.length > 2 && (
           <polygon
             points={polygonPoints}
@@ -139,12 +135,11 @@ function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
           />
         )}
 
-        {/* Points et Noms des Domaines */}
         {areas.map((area, i) => {
           const p = getPoint(area.score ?? 5, i);
           const labelP = getPoint(10, i, radius + 25);
           
-          let textAnchor = "middle";
+          let textAnchor: "middle" | "start" | "end" = "middle";
           if (labelP.x < center - 10) textAnchor = "end";
           if (labelP.x > center + 10) textAnchor = "start";
 
@@ -154,7 +149,7 @@ function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
               <text
                 x={labelP.x}
                 y={labelP.y - 6}
-                fill="#a1a1aa" // text-zinc-400
+                fill="#a1a1aa"
                 fontSize="11"
                 fontWeight="600"
                 textAnchor={textAnchor}
@@ -165,7 +160,7 @@ function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
               <text
                 x={labelP.x}
                 y={labelP.y + 8}
-                fill="#fbbf24" // text-amber-400
+                fill="#fbbf24"
                 fontSize="11"
                 fontWeight="bold"
                 textAnchor={textAnchor}
@@ -335,7 +330,6 @@ export function DashboardClient({
           )}
         </div>
 
-        {/* Section Roue de la Vie avec Graphique Radar */}
         <div className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-amber-300 uppercase">Roue de ta vie</h2>
@@ -343,7 +337,6 @@ export function DashboardClient({
           </div>
           
           <WheelOfLifeChart areas={areas} />
-          
         </div>
       </div>
     </div>
