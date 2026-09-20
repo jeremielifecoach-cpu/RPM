@@ -18,9 +18,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const body = await req.json();
-    await db.update(rpmBlocks).set(body).where(eq(rpmBlocks.id, id));
+
+    const updateData: Record<string, any> = {};
+    if (body.result !== undefined) updateData.result = body.result;
+    if (body.purpose !== undefined) updateData.purpose = body.purpose;
+    if (body.weekStart !== undefined) updateData.weekStart = body.weekStart;
+    if (body.areaId !== undefined) updateData.areaId = body.areaId ? body.areaId : null;
+
+    await db.update(rpmBlocks).set(updateData).where(eq(rpmBlocks.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Erreur modification bloc :", error);
     return NextResponse.json({ error: "Erreur modification bloc" }, { status: 500 });
   }
 }
