@@ -59,6 +59,12 @@ function buildActionContent(dateStr: string, status: ActionStatus, cleanText: st
   return res;
 }
 
+function addDays(dateStr: string, days: number): string {
+  const base = dateStr ? new Date(dateStr) : new Date();
+  base.setDate(base.getDate() + days);
+  return base.toISOString().split("T")[0];
+}
+
 function PlanifierContent() {
   const searchParams = useSearchParams();
   const captureId = searchParams.get("captureId");
@@ -180,6 +186,17 @@ function PlanifierContent() {
     loadData();
   }
 
+  async function updateBlockDateDirect(blockId: string, newDate: string) {
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === blockId ? { ...b, weekStart: newDate } : b))
+    );
+    await fetch(`/api/blocks/${blockId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weekStart: newDate }),
+    });
+  }
+
   async function handleDeleteBlock(blockId: string) {
     const res = await fetch(`/api/blocks/${blockId}`, { method: "DELETE" });
     if (res.ok) setBlocks((prev) => prev.filter((b) => b.id !== blockId));
@@ -210,6 +227,23 @@ function PlanifierContent() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: newContent, completed: isCompleted }),
+    });
+  }
+
+  async function updateActionDateDirect(act: any, newDateStr: string) {
+    const { status, cleanText } = parseAction(act.content, act.completed);
+    const newContent = buildActionContent(newDateStr, status, cleanText);
+
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((b) => ({
+        ...b,
+        actions: b.actions.map((a: any) => (a.id === act.id ? { ...a, content: newContent } : a)),
+      }))
+    );
+    await fetch(`/api/actions/${act.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newContent }),
     });
   }
 
@@ -282,15 +316,15 @@ function PlanifierContent() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-400">Date globale du bloc</label>
-              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-zinc-200">
-                <Calendar className="h-4 w-4 text-amber-400" />
+              <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-zinc-200 cursor-pointer">
+                <Calendar className="h-4 w-4 text-amber-400 flex-shrink-0" />
                 <input
                   type="date"
                   value={scheduledDate}
                   onChange={(e) => setScheduledDate(e.target.value)}
-                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer w-full"
+                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer w-full [color-scheme:dark]"
                 />
-              </div>
+              </label>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-400">Domaine de Vie</label>
@@ -319,15 +353,15 @@ function PlanifierContent() {
                 placeholder={`Action #${index + 1}`}
                 className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-zinc-100 outline-none"
               />
-              <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
-                <CalendarDays className="h-3.5 w-3.5 text-amber-400" />
+              <label className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300 cursor-pointer">
+                <CalendarDays className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
                 <input
                   type="date"
                   value={act.date}
                   onChange={(e) => updateActionRow(index, { date: e.target.value })}
-                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer"
+                  className="bg-transparent text-xs text-zinc-100 outline-none cursor-pointer [color-scheme:dark]"
                 />
-              </div>
+              </label>
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 px-2.5 py-2 text-xs text-zinc-300">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
                 <select
@@ -427,7 +461,7 @@ function PlanifierContent() {
                         type="date"
                         value={editBlockData.weekStart}
                         onChange={(e) => setEditBlockData({ ...editBlockData, weekStart: e.target.value })}
-                        className="rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none"
+                        className="rounded-xl border border-white/10 bg-black/60 p-2 text-xs text-zinc-100 outline-none [color-scheme:dark]"
                       />
                       <button
                         onClick={() => saveBlockChanges(b.id)}
@@ -450,11 +484,16 @@ function PlanifierContent() {
                             {areaObj.name}
                           </span>
                         )}
-                        {b.weekStart && (
-                          <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
-                            📅 {b.weekStart}
-                          </span>
-                        )}
+                        {/* Date cliquable directement sur le bloc */}
+                        <label className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300 flex items-center gap-1 cursor-pointer hover:bg-white/20">
+                          📅
+                          <input
+                            type="date"
+                            value={b.weekStart || new Date().toISOString().split("T")[0]}
+                            onChange={(e) => updateBlockDateDirect(b.id, e.target.value)}
+                            className="bg-transparent text-zinc-200 font-bold outline-none cursor-pointer text-[10px] [color-scheme:dark]"
+                          />
+                        </label>
                       </div>
                       <h3 className="text-base font-bold text-zinc-100 mt-0.5">{b.result}</h3>
                       {b.purpose && <p className="text-xs italic text-zinc-400">&laquo; {b.purpose} &raquo;</p>}
@@ -495,7 +534,7 @@ function PlanifierContent() {
                             type="date"
                             value={editActionData.dateStr}
                             onChange={(e) => setEditActionData({ ...editActionData, dateStr: e.target.value })}
-                            className="rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-xs text-zinc-100 outline-none"
+                            className="rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-xs text-zinc-100 outline-none [color-scheme:dark]"
                           />
                           <select
                             value={editActionData.minutes}
@@ -546,13 +585,10 @@ function PlanifierContent() {
                               </button>
                               <button
                                 onClick={() => {
-                                  const newDate = prompt(
-                                    "Nouvelle date pour cette action reportée (AAAA-MM-JJ) :",
-                                    dateStr || new Date().toISOString().split("T")[0]
-                                  );
-                                  if (newDate) updateActionStatus(act, "postponed", newDate);
+                                  const nextDate = addDays(dateStr, 1);
+                                  updateActionStatus(act, "postponed", nextDate);
                                 }}
-                                title="Reporté (changer la date)"
+                                title="Reporté au lendemain (+1 jour)"
                                 className={`px-1.5 py-0.5 rounded text-xs ${status === "postponed" ? "bg-amber-500/20 font-bold" : "opacity-60 hover:opacity-100"}`}
                               >
                                 ➡️
@@ -569,7 +605,16 @@ function PlanifierContent() {
                             <span className={status === "done" ? "line-through text-zinc-500" : "font-medium"}>{cleanText}</span>
                           </div>
                           <div className="flex items-center gap-2 text-zinc-500 text-[11px]">
-                            {dateStr && <span className="text-amber-300/80 font-semibold">📅 {dateStr}</span>}
+                            {/* Date cliquable directement sur chaque ligne d'action */}
+                            <label className="text-amber-300/80 font-semibold flex items-center gap-1 cursor-pointer hover:text-amber-200 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              📅
+                              <input
+                                type="date"
+                                value={dateStr || new Date().toISOString().split("T")[0]}
+                                onChange={(e) => updateActionDateDirect(act, e.target.value)}
+                                className="bg-transparent text-amber-300 font-semibold outline-none cursor-pointer text-[11px] [color-scheme:dark]"
+                              />
+                            </label>
                             {act.minutes && <span>⏱️ {act.minutes}m</span>}
                             <button onClick={() => startEditingAction(act)} className="p-1 text-zinc-500 hover:text-amber-300" title="Modifier l'action">
                               <Pencil className="h-3.5 w-3.5" />
