@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Plus, Trash2, Calendar, Sparkles, Trophy, Lightbulb } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Plus,
+  Trash2,
+  Calendar,
+  Sparkles,
+  Trophy,
+  Lightbulb,
+  Star,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -86,8 +96,15 @@ function RenderJournalContent({ raw }: { raw: string }) {
 
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Champs de saisie structurés pour le NOUVEAU formulaire
+  const [scoreDay, setScoreDay] = useState<number>(8);
+  const [gratitude1, setGratitude1] = useState("");
+  const [gratitude2, setGratitude2] = useState("");
+  const [gratitude3, setGratitude3] = useState("");
+  const [victories, setVictories] = useState("");
+  const [reflections, setReflections] = useState("");
 
   useEffect(() => {
     loadEntries();
@@ -114,16 +131,32 @@ export default function JournalPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim()) return;
+
+    const gratitudesList = [gratitude1, gratitude2, gratitude3].filter((g) => g.trim().length > 0);
+    if (gratitudesList.length === 0 && !victories.trim() && !reflections.trim()) {
+      return; // On ne sauvegarde pas si tout est vide
+    }
+
+    const journalPayload = {
+      scoreDay,
+      gratitudes: gratitudesList,
+      victories: victories.trim(),
+      reflections: reflections.trim(),
+    };
 
     try {
       const res = await fetch("/api/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: content.trim() }),
+        body: JSON.stringify({ content: JSON.stringify(journalPayload) }),
       });
       if (res.ok) {
-        setContent("");
+        setGratitude1("");
+        setGratitude2("");
+        setGratitude3("");
+        setVictories("");
+        setReflections("");
+        setScoreDay(8);
         loadEntries();
       }
     } catch (err) {
@@ -145,6 +178,9 @@ export default function JournalPage() {
 
   if (loading) return <div className="p-8 text-center text-xs text-zinc-500">Chargement du journal...</div>;
 
+  const hasInputData =
+    gratitude1.trim() || gratitude2.trim() || gratitude3.trim() || victories.trim() || reflections.trim();
+
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-4 sm:p-6">
       <div>
@@ -157,27 +193,101 @@ export default function JournalPage() {
         </h1>
       </div>
 
-      <form onSubmit={handleAdd} className="space-y-4 rounded-2xl border border-white/10 bg-[#0d0d10] p-5 shadow-xl">
-        <textarea
-          rows={4}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Qu'as-tu accompli aujourd'hui ? Quelles sont tes réflexions ?"
-          className="w-full rounded-xl border border-white/10 bg-black/40 p-4 text-sm text-zinc-100 outline-none resize-y"
-        />
-        <div className="flex justify-end">
+      {/* NOUVEAU FORMULAIRE AVEC CASES SÉPARÉES */}
+      <form onSubmit={handleAdd} className="space-y-6 rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl">
+        
+        {/* Score du jour */}
+        <div className="space-y-2 border-b border-white/10 pb-4">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> Score de ta journée
+            </label>
+            <span className="text-sm font-bold text-amber-400">{scoreDay}/10</span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={scoreDay}
+            onChange={(e) => setScoreDay(Number(e.target.value))}
+            className="w-full accent-amber-400 bg-zinc-800 cursor-pointer"
+          />
+        </div>
+
+        {/* 3 Gratitudes */}
+        <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-amber-400" /> 3 Gratitudes & Moments de Joie
+          </label>
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={gratitude1}
+              onChange={(e) => setGratitude1(e.target.value)}
+              placeholder="1. Petite victoire, instant présent, gratitude..."
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-zinc-100 outline-none focus:border-amber-400/50"
+            />
+            <input
+              type="text"
+              value={gratitude2}
+              onChange={(e) => setGratitude2(e.target.value)}
+              placeholder="2. Ce qui t'a apporté de la joie aujourd'hui..."
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-zinc-100 outline-none focus:border-amber-400/50"
+            />
+            <input
+              type="text"
+              value={gratitude3}
+              onChange={(e) => setGratitude3(e.target.value)}
+              placeholder="3. Une belle connexion ou réalisation..."
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-zinc-100 outline-none focus:border-amber-400/50"
+            />
+          </div>
+        </div>
+
+        {/* Victoires */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <Trophy className="h-4 w-4 text-emerald-400" /> Victoires & Avancées du Jour
+          </label>
+          <textarea
+            rows={3}
+            value={victories}
+            onChange={(e) => setVictories(e.target.value)}
+            placeholder="Qu'as-tu accompli de marquant aujourd'hui ?"
+            className="w-full rounded-xl border border-white/10 bg-black/40 p-3.5 text-sm text-zinc-100 outline-none resize-y focus:border-emerald-400/50"
+          />
+        </div>
+
+        {/* Réflexions */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+            <Lightbulb className="h-4 w-4 text-sky-400" /> Réflexions & Apprentissages
+          </label>
+          <textarea
+            rows={3}
+            value={reflections}
+            onChange={(e) => setReflections(e.target.value)}
+            placeholder="Tes prises de conscience, compréhensions ou idées pour la suite..."
+            className="w-full rounded-xl border border-white/10 bg-black/40 p-3.5 text-sm text-zinc-100 outline-none resize-y focus:border-sky-400/50"
+          />
+        </div>
+
+        <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={!content.trim()}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-black hover:bg-amber-400 disabled:opacity-50"
+            disabled={!hasInputData}
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-black hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus className="h-4 w-4" /> Ajouter au journal
+            <Plus className="h-4 w-4" /> Enregistrer la journée
           </button>
         </div>
       </form>
 
+      {/* Liste des enregistrements */}
       <div className="space-y-4">
-        <h2 className="text-xs font-bold text-zinc-400 uppercase">Tes précédents enregistrements ({entries.length})</h2>
+        <h2 className="text-xs font-bold text-zinc-400 uppercase">
+          Tes précédents enregistrements ({entries.length})
+        </h2>
 
         {entries.length === 0 ? (
           <p className="text-xs text-zinc-500 italic">Ton journal est vide pour le moment.</p>
@@ -202,9 +312,15 @@ export default function JournalPage() {
                 <div className="flex items-center justify-between border-b border-white/5 pb-3">
                   <div className="flex items-center gap-2 text-amber-400">
                     <Calendar className="h-4 w-4" />
-                    <span className="text-xs font-bold capitalize">{dateStr} à {timeStr}</span>
+                    <span className="text-xs font-bold capitalize">
+                      {dateStr} à {timeStr}
+                    </span>
                   </div>
-                  <button onClick={() => handleDelete(entry.id)} className="p-1.5 text-zinc-600 hover:text-rose-400" title="Supprimer">
+                  <button
+                    onClick={() => handleDelete(entry.id)}
+                    className="p-1.5 text-zinc-600 hover:text-rose-400"
+                    title="Supprimer"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
