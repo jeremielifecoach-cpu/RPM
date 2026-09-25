@@ -148,7 +148,7 @@ export default function JournalPage() {
       const res = await fetch("/api/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: JSON.stringify(journalPayload) }),
+        body: JSON.stringify(journalPayload),
       });
       if (res.ok) {
         setGratitude1("");
