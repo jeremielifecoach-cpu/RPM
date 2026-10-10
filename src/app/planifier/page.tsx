@@ -43,10 +43,10 @@ function parseAction(rawContent: string, isCompletedFromDb?: boolean | null) {
     content = content.replace(/^\[\d{4}-\d{2}-\d{2}\]/, "").trim();
   }
 
-  const statusMatch = content.match(/^\[STATUS:(todo\vert{}in_progress\vert{}postponed\vert{}done)\]/);
+  const statusMatch = content.match(/^\[STATUS:(todo|in_progress|postponed|done)\]/);
   if (statusMatch) {
     if (!isCompletedFromDb) status = statusMatch[1] as ActionStatus;
-    content = content.replace(/^\[STATUS:(todo\vert{}in_progress\vert{}postponed\vert{}done)\]/, "").trim();
+    content = content.replace(/^\[STATUS:(todo|in_progress|postponed|done)\]/, "").trim();
   }
 
   return { dateStr, status, cleanText: content };

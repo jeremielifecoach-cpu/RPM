@@ -10,7 +10,11 @@ export default async function HomePage() {
   await ensureAreasSeeded();
   const areasData = await getAreas();
   const blocksData = await db.select().from(rpmBlocks);
-  const actionsData = await db.select().from(actions);
+  const actionsData = (await db.select().from(actions)).map((action) => ({
+    ...action,
+    completed: Boolean(action.completed || action.isDone),
+    isDone: Boolean(action.completed || action.isDone),
+  }));
 
   const fullBlocks = blocksData.map((b) => ({
     ...b,

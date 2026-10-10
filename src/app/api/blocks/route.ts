@@ -9,7 +9,11 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const blocksData = await db.select().from(rpmBlocks);
-    const actionsData = await db.select().from(actions);
+    const actionsData = (await db.select().from(actions)).map((action) => ({
+      ...action,
+      completed: Boolean(action.completed || action.isDone),
+      isDone: Boolean(action.completed || action.isDone),
+    }));
 
     const fullBlocks = blocksData.map((b) => ({
       ...b,
