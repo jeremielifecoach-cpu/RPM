@@ -83,6 +83,8 @@ function PlanifierContent() {
   const [actionsList, setActionsList] = useState<ActionInput[]>([
     { content: searchParams.get("action") || "", isMust: false, minutes: 15, date: initialDate },
   ]);
+  const [planError, setPlanError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editBlockData, setEditBlockData] = useState<{ result: string; purpose: string; areaId: string; weekStart: string }>({
@@ -123,46 +125,74 @@ function PlanifierContent() {
 
   async function handleCreateOrAppend(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
+    if (!targetBlockId && !result.trim()) {
+      setPlanError("Décris le résultat que tu veux obtenir.");
+      return;
+    }
+    if (!targetBlockId && !purpose.trim()) {
+      setPlanError("Explique pourquoi ce résultat compte pour toi.");
+      return;
+    }
     const formattedActions = actionsList
       .filter((a) => a.content.trim())
       .map((a) => ({
         ...a,
         content: buildActionContent(a.date, "todo", a.content),
       }));
+    if (formattedActions.length === 0) {
+      setPlanError("Ajoute au moins une action concrète pour avancer vers ce résultat.");
+      return;
+    }
 
-    const res = await fetch("/api/blocks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        targetBlockId: targetBlockId || undefined,
-        result,
-        purpose,
-        weekStart: scheduledDate,
-        areaId: selectedAreaId || null,
-        actionsList: formattedActions,
-      }),
-    });
-
-    if (res.ok) {
-      if (captureId) {
-        const capRes = await fetch("/api/captures");
-        if (capRes.ok) {
-          const caps = await capRes.json();
-          const cap = caps.find((c: any) => c.id === captureId);
-          if (cap && !cap.content.startsWith("[ARCHIVED] ")) {
-            await fetch(`/api/captures/${captureId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ content: `[ARCHIVED] ${cap.content}` }),
-            });
-          }
-        }
+    setPlanError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetBlockId: targetBlockId || undefined,
+          result: result.trim(),
+          purpose: purpose.trim(),
+          weekStart: scheduledDate,
+          areaId: selectedAreaId || null,
+          actionsList: formattedActions,
+        }),
+      });
+      if (!res.ok) {
+        setPlanError("Le plan n'a pas été enregistré. Réessaie sans perdre tes saisies.");
+        return;
       }
+
       setResult("");
       setPurpose("");
       setTargetBlockId("");
       setActionsList([{ content: "", isMust: false, minutes: 15, date: new Date().toISOString().split("T")[0] }]);
-      loadData();
+      void loadData().catch(() => setPlanError("Plan enregistré, mais la liste n'a pas pu être actualisée. Recharge la page."));
+
+      if (captureId) {
+        try {
+          const capRes = await fetch("/api/captures");
+          if (capRes.ok) {
+            const caps = await capRes.json();
+            const cap = caps.find((c: any) => c.id === captureId);
+            if (cap && !cap.content.startsWith("[ARCHIVED] ")) {
+              await fetch(`/api/captures/${captureId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: `[ARCHIVED] ${cap.content}` }),
+              });
+            }
+          }
+        } catch {
+          // Le bloc est enregistré même si l'archivage de la capture échoue.
+        }
+      }
+    } catch {
+      setPlanError("Connexion impossible. Tes saisies sont conservées : réessaie dans un instant.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -296,23 +326,27 @@ function PlanifierContent() {
         {!targetBlockId && (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-amber-300 uppercase">1. Résultat Visé (R)</label>
+              <label htmlFor="rpm-result" className="text-xs font-bold text-amber-300 uppercase">1. Résultat — qu'est-ce que je veux obtenir ?</label>
               <input
+                id="rpm-result"
                 value={result}
                 onChange={(e) => setResult(e.target.value)}
-                placeholder="Ex : Lancer ma nouvelle offre"
+                placeholder="Ex : D'ici vendredi, avoir fixé 3 rendez-vous pour mon offre"
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
               />
+              <p className="text-[11px] text-zinc-500">Décris ce qui sera différent et comment tu constateras que c'est réussi.</p>
             </div>
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-amber-300 uppercase">2. Raison d&apos;être / Pourquoi (P)</label>
+              <label htmlFor="rpm-purpose" className="text-xs font-bold text-amber-300 uppercase">2. Pourquoi — qu'est-ce que ce résultat va m'apporter ?</label>
               <textarea
+                id="rpm-purpose"
                 rows={2}
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                placeholder="Pourquoi est-ce crucial ?"
+                placeholder="Ex : Valider cette offre pour sécuriser mes revenus et choisir mes clients"
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none"
               />
+              <p className="text-[11px] text-zinc-500">Écris une raison qui te donnera envie d'agir même quand ce sera inconfortable.</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-400">Date globale du bloc</label>
@@ -344,7 +378,8 @@ function PlanifierContent() {
           </div>
         )}
         <div className="space-y-3 border-t border-white/10 pt-3">
-          <label className="text-xs font-bold text-amber-300 uppercase block">3. Actions Massives (M) & Dates Précises</label>
+          <label className="text-xs font-bold text-amber-300 uppercase block">3. Plan d'action — comment obtenir ce résultat ?</label>
+          <p className="text-[11px] text-zinc-500">Liste les étapes concrètes, puis marque MUST celles qui auront le plus d'impact. Commence par la prochaine action.</p>
           {actionsList.map((act, index) => (
             <div key={index} className="flex flex-wrap items-center gap-2">
               <input
@@ -391,8 +426,9 @@ function PlanifierContent() {
             <Plus className="h-3.5 w-3.5" /> Ajouter une action
           </button>
         </div>
-        <button type="submit" className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-black hover:bg-amber-400">
-          {targetBlockId ? "Ajouter l'action au bloc existant" : "Créer le bloc RPM"}
+        {planError && <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">{planError}</p>}
+        <button type="submit" disabled={submitting} className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-black hover:bg-amber-400 disabled:cursor-wait disabled:opacity-60">
+          {submitting ? "Enregistrement…" : targetBlockId ? "Ajouter l'action au bloc existant" : "Créer le bloc RPM"}
         </button>
       </form>
 
@@ -581,7 +617,7 @@ function PlanifierContent() {
                                 title="En cours"
                                 className={`px-1.5 py-0.5 rounded text-xs ${status === "in_progress" ? "bg-sky-500/20 font-bold" : "opacity-60 hover:opacity-100"}`}
                               >
-                                ✅
+                                ⏳
                               </button>
                               <button
                                 onClick={() => {
@@ -598,7 +634,7 @@ function PlanifierContent() {
                                 title="Fait"
                                 className={`px-1.5 py-0.5 rounded text-xs ${status === "done" ? "bg-rose-500/20 font-bold" : "opacity-60 hover:opacity-100"}`}
                               >
-                                ❌
+                                ✅
                               </button>
                             </div>
                             {act.isMust && <span className="text-rose-400 font-bold text-[11px]">🔥 MUST</span>}
