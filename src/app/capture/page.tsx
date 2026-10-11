@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Inbox, Plus, Trash2, Target, HelpCircle, CheckSquare, Layers, Calendar, Archive, RefreshCw } from "lucide-react";
+import { ArrowLeft, Inbox, Plus, Trash2, Target, HelpCircle, CheckSquare, Layers, Calendar, Archive, RefreshCw, Pencil } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,10 @@ export default function CapturePage() {
   const [selectedBlockId, setSelectedBlockId] = useState<Record<string, string>>({});
   const [selectedDates, setSelectedDates] = useState<Record<string, string>>({});
   const [content, setContent] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -62,6 +66,39 @@ export default function CapturePage() {
       if (res.ok) setCaptures((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  function startEdit(item: any) {
+    setEditingId(item.id);
+    setEditContent(item.content.replace(/^\[ARCHIVED\] /, ""));
+    setEditError("");
+  }
+
+  async function saveEdit(item: any) {
+    const text = editContent.trim();
+    if (!text || savingEdit) {
+      if (!text) setEditError("La capture ne peut pas être vide.");
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError("");
+    const updatedContent = item.content.startsWith("[ARCHIVED] ") ? `[ARCHIVED] ${text}` : text;
+    try {
+      const res = await fetch(`/api/captures/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: updatedContent }),
+      });
+      if (!res.ok) throw new Error("Enregistrement impossible");
+      setCaptures((prev) => prev.map((c) => c.id === item.id ? { ...c, content: updatedContent } : c));
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
+      setEditError("La correction n'a pas été enregistrée. Réessaie.");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -134,8 +171,18 @@ export default function CapturePage() {
             activeCaptures.map((item) => (
               <div key={item.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-zinc-200 text-sm">{item.content}</span>
+                  {editingId === item.id ? (
+                    <div className="flex-1 mr-3 space-y-2">
+                      <textarea aria-label="Modifier la capture" rows={3} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-xl border border-amber-500/40 bg-black/40 p-3 text-sm text-zinc-100 outline-none" />
+                      {editError && <p role="alert" className="text-xs text-rose-400">{editError}</p>}
+                      <div className="flex gap-2">
+                        <button type="button" disabled={savingEdit} onClick={() => saveEdit(item)} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-black disabled:opacity-50">{savingEdit ? "Enregistrement…" : "Enregistrer"}</button>
+                        <button type="button" disabled={savingEdit} onClick={() => setEditingId(null)} className="rounded-lg px-3 py-1.5 text-xs text-zinc-400">Annuler</button>
+                      </div>
+                    </div>
+                  ) : <span className="font-medium text-zinc-200 text-sm">{item.content}</span>}
                   <div className="flex items-center gap-1">
+                    {editingId !== item.id && <button type="button" onClick={() => startEdit(item)} className="p-1.5 text-zinc-400 hover:text-amber-400" title="Modifier la capture" aria-label="Modifier la capture"><Pencil className="h-4 w-4" /></button>}
                     <button onClick={() => handleToggleArchive(item.id, item.content, true)} className="p-1.5 text-zinc-400 hover:text-amber-400" title="Archiver">
                       <Archive className="h-4 w-4" />
                     </button>
@@ -195,8 +242,18 @@ export default function CapturePage() {
             <h2 className="text-xs font-bold text-zinc-500 uppercase">Captures Traitées / Archivées ({archivedCaptures.length})</h2>
             {archivedCaptures.map((item) => (
               <div key={item.id} className="rounded-2xl border border-white/5 bg-black/40 p-4 flex items-center justify-between">
-                <span className="text-zinc-500 text-sm line-through">{item.content.replace("[ARCHIVED] ", "")}</span>
+                {editingId === item.id ? (
+                  <div className="flex-1 mr-3 space-y-2">
+                    <textarea aria-label="Modifier la capture archivée" rows={3} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-xl border border-amber-500/40 bg-black/40 p-3 text-sm text-zinc-100 outline-none" />
+                    {editError && <p role="alert" className="text-xs text-rose-400">{editError}</p>}
+                    <div className="flex gap-2">
+                      <button type="button" disabled={savingEdit} onClick={() => saveEdit(item)} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-black disabled:opacity-50">{savingEdit ? "Enregistrement…" : "Enregistrer"}</button>
+                      <button type="button" disabled={savingEdit} onClick={() => setEditingId(null)} className="rounded-lg px-3 py-1.5 text-xs text-zinc-400">Annuler</button>
+                    </div>
+                  </div>
+                ) : <span className="text-zinc-500 text-sm line-through">{item.content.replace("[ARCHIVED] ", "")}</span>}
                 <div className="flex items-center gap-2">
+                  {editingId !== item.id && <button type="button" onClick={() => startEdit(item)} className="p-1.5 text-zinc-400 hover:text-amber-400" title="Modifier la capture" aria-label="Modifier la capture"><Pencil className="h-4 w-4" /></button>}
                   <button onClick={() => handleToggleArchive(item.id, item.content, false)} className="p-1.5 text-zinc-400 hover:text-emerald-400" title="Restaurer (Remettre en boîte de réception)">
                     <RefreshCw className="h-4 w-4" />
                   </button>

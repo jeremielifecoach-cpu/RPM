@@ -17,7 +17,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const body = await req.json();
-    await db.update(captures).set(body).where(eq(captures.id, id));
+    if (typeof body.content !== "string" || !body.content.trim()) {
+      return NextResponse.json({ error: "Le texte de la capture est requis" }, { status: 400 });
+    }
+    await db.update(captures).set({ content: body.content.trim() }).where(eq(captures.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Erreur modification capture" }, { status: 500 });
