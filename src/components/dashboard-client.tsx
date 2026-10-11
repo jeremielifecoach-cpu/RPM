@@ -339,6 +339,10 @@ export function DashboardClient({
         </Link>
       </div>
 
+      <Link href="/bilan" className="block rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-bold text-amber-200 hover:bg-amber-500/20">
+        Faire le bilan de la semaine : victoires, actions restantes et prochain résultat →
+      </Link>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-[#0d0d10] p-6 shadow-xl space-y-4">
           <h2 className="text-sm font-bold text-amber-300 uppercase flex items-center gap-2">
