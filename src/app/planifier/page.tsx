@@ -19,6 +19,8 @@ import {
   Pencil,
   Save,
   X,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +86,7 @@ function PlanifierContent() {
     { content: searchParams.get("action") || "", isMust: false, minutes: 15, date: initialDate },
   ]);
   const [planError, setPlanError] = useState("");
+  const [statusError, setStatusError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
@@ -232,6 +235,22 @@ function PlanifierContent() {
     if (res.ok) setBlocks((prev) => prev.filter((b) => b.id !== blockId));
   }
 
+  async function setBlockStatus(blockId: string, status: "active" | "completed") {
+    setStatusError("");
+    try {
+      const res = await fetch(`/api/blocks/${blockId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Mise à jour impossible");
+      setBlocks((prev) => prev.map((b) => b.id === blockId ? { ...b, status, completed: status === "completed" } : b));
+    } catch (error) {
+      console.error(error);
+      setStatusError("Impossible de changer le statut du bloc. Réessaie.");
+    }
+  }
+
   async function handleBlockAction(blockId: string, actionType: "duplicate" | "carryOver") {
     await fetch("/api/blocks", {
       method: "POST",
@@ -301,7 +320,9 @@ function PlanifierContent() {
     loadData();
   }
 
-  const filteredBlocks = filterAreaId ? blocks.filter((b) => b.areaId === filterAreaId) : blocks;
+  const activeBlocks = blocks.filter((b) => b.status !== "completed");
+  const completedBlocks = blocks.filter((b) => b.status === "completed");
+  const filteredBlocks = filterAreaId ? activeBlocks.filter((b) => b.areaId === filterAreaId) : activeBlocks;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
@@ -433,6 +454,7 @@ function PlanifierContent() {
       </form>
 
       <div className="space-y-4">
+        {statusError && <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">{statusError}</p>}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-zinc-300 uppercase">Blocs RPM en cours ({filteredBlocks.length})</h2>
           <div className="flex items-center gap-2 bg-[#0d0d10] border border-white/10 rounded-xl px-3 py-1.5 text-xs">
@@ -457,6 +479,7 @@ function PlanifierContent() {
         {filteredBlocks.map((b) => {
           const areaObj = areas.find((a) => a.id === b.areaId);
           const isEditing = editingBlockId === b.id;
+          const allActionsDone = b.actions?.length > 0 && b.actions.every((a: any) => a.completed || a.isDone);
 
           return (
             <div key={b.id} className="rounded-2xl border border-white/10 bg-[#0d0d10] p-5 space-y-4 shadow-lg">
@@ -551,6 +574,15 @@ function PlanifierContent() {
                   </div>
                 )}
               </div>
+
+              {allActionsDone && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-emerald-200">
+                  <span>Toutes les actions sont faites. Le résultat visé est-il atteint ?</span>
+                  <button type="button" onClick={() => setBlockStatus(b.id, "completed")} className="flex items-center gap-1 rounded-lg bg-emerald-500 px-3 py-1.5 font-bold text-black hover:bg-emerald-400">
+                    <Archive className="h-3.5 w-3.5" /> Résultat atteint — archiver
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-2">
                 {b.actions.map((act: any) => {
@@ -666,6 +698,21 @@ function PlanifierContent() {
           );
         })}
       </div>
+      <section className="space-y-3 border-t border-white/10 pt-6">
+        <h2 className="text-sm font-bold uppercase text-emerald-300">Résultats atteints — archives ({completedBlocks.length})</h2>
+        <p className="text-xs text-zinc-500">Conserve la trace de tes résultats et de tes actions. Tu peux remettre un bloc en cours.</p>
+        {completedBlocks.map((b) => (
+          <div key={b.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-white/10 bg-[#0d0d10] p-4">
+            <div>
+              <p className="text-sm font-semibold text-zinc-200">{b.result}</p>
+              <p className="mt-1 text-xs text-zinc-500">{b.actions?.length || 0} action(s) · {b.purpose}</p>
+            </div>
+            <button type="button" onClick={() => setBlockStatus(b.id, "active")} className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:text-amber-300">
+              <RotateCcw className="h-3.5 w-3.5" /> Remettre en cours
+            </button>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }

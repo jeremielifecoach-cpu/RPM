@@ -24,6 +24,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.purpose !== undefined) updateData.purpose = body.purpose;
     if (body.weekStart !== undefined) updateData.weekStart = body.weekStart;
     if (body.areaId !== undefined) updateData.areaId = body.areaId ? body.areaId : null;
+    if (body.status !== undefined) {
+      if (body.status !== "active" && body.status !== "completed") {
+        return NextResponse.json({ error: "Statut de bloc invalide" }, { status: 400 });
+      }
+      updateData.status = body.status;
+      updateData.completed = body.status === "completed";
+    }
 
     await db.update(rpmBlocks).set(updateData).where(eq(rpmBlocks.id, id));
     return NextResponse.json({ success: true });

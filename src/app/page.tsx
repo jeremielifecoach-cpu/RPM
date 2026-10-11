@@ -21,16 +21,18 @@ export default async function HomePage() {
     actions: actionsData.filter((a) => a.blockId === b.id),
   }));
 
-  const activeBlocks = fullBlocks.length;
-  const totalActions = actionsData.length;
-  const completedActions = actionsData.filter((a) => a.completed).length;
+  const currentBlocks = fullBlocks.filter((b) => b.status !== "completed");
+  const currentActions = actionsData.filter((a) => currentBlocks.some((b) => b.id === a.blockId));
+  const activeBlocks = currentBlocks.length;
+  const totalActions = currentActions.length;
+  const completedActions = currentActions.filter((a) => a.completed).length;
 
-  const mustActionsList = actionsData.filter((a) => a.isMust);
+  const mustActionsList = currentActions.filter((a) => a.isMust);
   const mustActions = mustActionsList.length;
   const mustCompleted = mustActionsList.filter((a) => a.completed).length;
 
   // Calcul sécurisé du temps restant
-  const uncompletedActions = actionsData.filter((a) => !a.completed);
+  const uncompletedActions = currentActions.filter((a) => !a.completed);
   const remainingMinutes = uncompletedActions.reduce((acc, a) => {
     const mins = typeof a.minutes === "number" ? a.minutes : parseInt(String(a.minutes || 15), 10);
     return acc + (isNaN(mins) ? 15 : mins);
@@ -93,7 +95,7 @@ export default async function HomePage() {
       weekLabel="Semaine en cours"
       todayLabel={todayLabel}
       areas={areasData}
-      blocks={fullBlocks as any}
+      blocks={currentBlocks as any}
       stats={stats as any}
     />
   );

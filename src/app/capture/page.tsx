@@ -201,7 +201,7 @@ export default function CapturePage() {
                       className="bg-transparent text-xs text-zinc-300 outline-none"
                     >
                       <option value="">➕ Nouveau bloc RPM</option>
-                      {existingBlocks.map((b) => (
+                      {existingBlocks.filter((b) => b.status !== "completed").map((b) => (
                         <option key={b.id} value={b.id}>
                           📌 {b.result.slice(0, 30)}...
                         </option>
