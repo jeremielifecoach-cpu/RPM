@@ -60,13 +60,13 @@ function parseActionContent(rawContent: string) {
   const match = rawContent.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
   if (match) {
     const [_, dateStr, text] = match;
-    const formattedDate = new Date(dateStr).toLocaleDateString("fr-FR", {
+    const formattedDate = new Date(`${dateStr}T12:00:00`).toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "short",
     });
-    return { dateStr: formattedDate, text };
+    return { dateStr: formattedDate, isoDate: dateStr, text: text.replace(/^\[STATUS:[^\]]+\]\s*/, "") };
   }
-  return { dateStr: null, text: rawContent };
+  return { dateStr: null, isoDate: null, text: rawContent.replace(/^\[STATUS:[^\]]+\]\s*/, "") };
 }
 
 function WheelOfLifeChart({ areas }: { areas: AreaItem[] }) {
@@ -183,9 +183,11 @@ export function DashboardClient({
   stats = {},
 }: DashboardClientProps) {
   const [blocksList, setBlocksList] = useState<BlockFull[]>(initialBlocks);
+  const [actionError, setActionError] = useState("");
 
   async function toggleAction(actionId: string, currentCompleted: boolean) {
     const nextState = !currentCompleted;
+    setActionError("");
     setBlocksList((prevBlocks) =>
       prevBlocks.map((b) => ({
         ...b,
@@ -194,17 +196,35 @@ export function DashboardClient({
     );
 
     try {
-      await fetch(`/api/actions/${actionId}`, {
+      const response = await fetch(`/api/actions/${actionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: nextState }),
       });
+      if (!response.ok) throw new Error(`Erreur ${response.status}`);
     } catch (err) {
       console.error("Erreur toggle action :", err);
+      setBlocksList((prevBlocks) => prevBlocks.map((b) => ({
+        ...b,
+        actions: b.actions.map((a) => a.id === actionId ? { ...a, completed: currentCompleted } : a),
+      })));
+      setActionError("L'action n'a pas pu être enregistrée. Réessaie.");
     }
   }
 
   const allActions = blocksList.flatMap((b) => b.actions || []);
+  const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });
+  const dayActions = blocksList.flatMap((block) => block.actions
+    .filter((action) => {
+      const date = parseActionContent(action.content).isoDate;
+      return date && date <= todayKey && (!action.completed || date === todayKey);
+    })
+    .map((action) => ({ action, block }))
+  ).sort((a, b) => {
+    const aDate = parseActionContent(a.action.content).isoDate || "";
+    const bDate = parseActionContent(b.action.content).isoDate || "";
+    return aDate.localeCompare(bDate) || Number(b.action.isMust) - Number(a.action.isMust);
+  });
   const activeBlocksCount = blocksList.length;
   const mustActions = allActions.filter((a) => a.isMust);
   const mustCompletedCount = mustActions.filter((a) => a.completed).length;
@@ -274,6 +294,35 @@ export function DashboardClient({
           <p className="mt-1 text-[11px] text-zinc-500">Temps estimé devant toi</p>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-amber-500/25 bg-[#15120e] p-5 sm:p-6" aria-labelledby="today-heading">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="today-heading" className="font-display text-xl font-bold text-amber-200">Aujourd’hui et en retard</h2>
+          <Link href="/planifier" className="text-xs font-bold text-amber-400 hover:underline">Voir le planning</Link>
+        </div>
+        <p className="mt-1 text-xs text-zinc-400">Tes actions datées à faire, avec leur résultat RPM. Les actions sans date restent dans le planning.</p>
+        {actionError && <p role="alert" className="mt-3 text-sm text-rose-300">{actionError}</p>}
+        {dayActions.length === 0 ? (
+          <p className="mt-5 text-sm text-zinc-400">Aucune action datée pour aujourd’hui ou en retard. Planifie ta prochaine action dans un bloc RPM.</p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {dayActions.map(({ action, block }) => {
+              const parsed = parseActionContent(action.content);
+              const overdue = parsed.isoDate! < todayKey;
+              return <li key={action.id} className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/30 p-3">
+                <button type="button" onClick={() => toggleAction(action.id, Boolean(action.completed))} aria-label={action.completed ? `Remettre à faire : ${parsed.text}` : `Marquer accomplie : ${parsed.text}`} className="mt-0.5 shrink-0 text-amber-300">
+                  {action.completed ? <CheckSquare className="h-5 w-5 text-emerald-400" /> : <Square className="h-5 w-5" />}
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm ${action.completed ? "text-zinc-500 line-through" : "text-zinc-100"}`}>{parsed.text} {action.isMust && <span className="text-amber-300 text-xs font-bold">MUST</span>}</p>
+                  <Link href={`/planifier/${block.id}`} className="mt-1 block truncate text-xs text-zinc-400 hover:text-amber-300">Résultat : {block.result}</Link>
+                </div>
+                <span className={`shrink-0 text-xs ${overdue && !action.completed ? "text-rose-300" : "text-zinc-400"}`}>{overdue ? "En retard · " : ""}{parsed.dateStr}</span>
+              </li>;
+            })}
+          </ul>
+        )}
+      </section>
 
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
         <Link href="/planifier" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#0d0d10] p-4 text-xs font-bold text-zinc-200 hover:border-amber-400/50 hover:text-amber-300 transition-all">
