@@ -16,6 +16,7 @@ export function AppShell({ children }: AppShellProps) {
     { name: "Tableau de Bord", href: "/", icon: "⚡" },
     { name: "Capturer (Inbox)", href: "/capture", icon: "📥" },
     { name: "Planifier (RPM)", href: "/planifier", icon: "🗓️" },
+    { name: "Bilan hebdomadaire", href: "/bilan", icon: "✅" },
     { name: "Domaines de vie", href: "/domaines", icon: "💎" },
     { name: "Rôles & Identités", href: "/roles", icon: "👑" },
     { name: "Journal & Bilan", href: "/journal", icon: "📖" },
